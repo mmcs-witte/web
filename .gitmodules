@@ -1,0 +1,4 @@
+[submodule "lw-charts"]
+	path = vendor/lw-charts
+	url = git@github.com:mmcs-witte/lw-charts.git
+	branch = charts
