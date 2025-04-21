@@ -107,7 +107,7 @@ onMounted(() => {
 		chart.timeScale().applyOptions(props.timeScaleOptions);
 	}
 
-	chart.timeScale().fitContent();
+	chart.timeScale().fitContent(); 
 
 	if (props.autosize) {
 		window.addEventListener('resize', resizeHandler);
