@@ -11,7 +11,7 @@ export default defineConfig({
   ],
   resolve: {
     alias: {
-      'lightweight-charts': path.resolve(__dirname, 'vendor/lw-charts/src/index.ts'),
+      'lightweight-charts': path.resolve(__dirname, 'vendor/lw-charts/src'),
     }
   }
 })
