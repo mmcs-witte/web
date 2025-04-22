@@ -14,6 +14,7 @@ import {
 	HistogramSeries,
 	BaselineSeries,
 } from 'lightweight-charts';
+import {AnchoredText} from "../plugins/anchored-text/anchored-text.js";
 
 const props = defineProps({
 	type: {
@@ -90,6 +91,23 @@ const addSeriesAndData = props => {
 	const seriesDefinition = getChartSeriesDefinition(props.type);
 	series = chart.addSeries(seriesDefinition, props.seriesOptions);
 	series.setData(props.data);
+
+  const anchoredText = new AnchoredText({
+    vertAlign: 'middle',
+    horzAlign: 'middle',
+    text: 'Anchored Text',
+    lineHeight: 54,
+    font: 'italic bold 54px Arial',
+    color: 'red',
+  });
+  series.attachPrimitive(anchoredText);
+
+// testing the requestUpdate method
+  setTimeout(() => {
+    anchoredText.applyOptions({
+      text: 'New Text',
+    });
+  }, 2000);
 };
 
 onMounted(() => {
