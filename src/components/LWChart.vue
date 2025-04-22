@@ -14,7 +14,11 @@ import {
 	HistogramSeries,
 	BaselineSeries,
 } from 'lightweight-charts';
-import {AnchoredText} from "../plugins/anchored-text/anchored-text.js";
+import { AnchoredText } from "../plugins/anchored-text/anchored-text.ts";
+import { TrendLine } from '../plugins/trend-line/trend-line.ts';
+import { TriangleDrawingTool } from '../plugins/triangle-drawing-tool/triangle-drawing-tool.ts';
+import { RectangleDrawingTool } from '../plugins/rectangle-drawing-tool/rectangle-drawing-tool.ts';
+import { VolumeProfile } from '../plugins/volume-profile/volume-profile.ts';
 
 const props = defineProps({
 	type: {
@@ -86,28 +90,90 @@ const resizeHandler = () => {
 	chart.resize(dimensions.width, dimensions.height);
 };
 
+const createTrendLine = (chart, series, point1, point2, width) => {
+  const trendLine = new TrendLine(chart, series, point1, point2, {
+    lineColor: 'red',
+	  width: 10,
+	  showLabels: true,
+	  labelBackgroundColor: 'blue',
+	  labelTextColor: 'orange',
+	});
+  series.attachPrimitive(trendLine);
+};
+
+const createRectangleDrawingTool = (chart, series, ) => {
+  const rectDrawing = new RectangleDrawingTool(chart, series, 
+	  null,
+    {
+	    fillColor: 'rgba(200, 50, 100, 0.75)',
+	    previewFillColor: 'rgba(200, 50, 100, 0.25)',
+	    labelColor: 'rgba(200, 50, 100, 1)',
+	    labelTextColor: 'white',
+	    showLabels: true,
+	    priceLabelFormatter: (price) => price.toFixed(2),
+	    timeLabelFormatter: (time) => {
+	    	if (typeof time == 'string') return time;
+	    	const date = isBusinessDay(time)
+	    		? new Date(time.year, time.month, time.day)
+	    		: new Date(time * 1000);
+	    	return date.toLocaleDateString();
+	    },
+  }
+  );
+  series.attachPrimitive(rectDrawing);
+};
+
+const createTriangleDrawingTool = (chart, series) => {
+  const triangle = new TriangleDrawingTool(
+	chart,
+	series,
+	null,
+	{
+		showLabels: false,
+	}
+  );
+  series.attachPrimitive(triangle);
+};
+
+const createVolumeProfile = (chart, series, data) => {
+  const basePrice = data[data.length - 50].value;
+  const priceStep = Math.round(basePrice * 0.1);
+  const profile = [];
+  for (let i = 0; i < 15; i++) {
+  	profile.push({
+  		price: basePrice + i * priceStep,
+  		vol: Math.round(Math.random() * 20),
+  	});
+  }
+  const vpData = {
+  	time: data[data.length - 150].time,
+  	profile,
+  	width: 100, // number of bars width
+  };
+  const vp = new VolumeProfile(chart, series, vpData);
+  series.attachPrimitive(vp);
+};
+
 // Creates the chart series and sets the data.
 const addSeriesAndData = props => {
 	const seriesDefinition = getChartSeriesDefinition(props.type);
 	series = chart.addSeries(seriesDefinition, props.seriesOptions);
 	series.setData(props.data);
 
-  const anchoredText = new AnchoredText({
-    vertAlign: 'middle',
-    horzAlign: 'middle',
-    text: 'Anchored Text',
-    lineHeight: 54,
-    font: 'italic bold 54px Arial',
-    color: 'red',
-  });
-  series.attachPrimitive(anchoredText);
+  const dataLength = props.data.length;
+  const point1 = {
+  	time: props.data[dataLength - 50].time,
+  	price: props.data[dataLength - 50].value * 0.9,
+  };
+  const point2 = {
+  	time: props.data[dataLength - 5].time,
+  	price: props.data[dataLength - 5].value * 1.10,
+  };
 
-// testing the requestUpdate method
-  setTimeout(() => {
-    anchoredText.applyOptions({
-      text: 'New Text',
-    });
-  }, 2000);
+  // createTrendLine(chart, series, point1, point2, 10);
+  // createTriangleDrawingTool(chart, series);
+  //createRectangleDrawingTool(chart, series);
+  createVolumeProfile(chart, series, props.data);
 };
 
 onMounted(() => {

@@ -1,5 +1,5 @@
-import { CanvasRenderingTarget2D } from 'fancy-canvas';
-import {
+import type { CanvasRenderingTarget2D } from 'fancy-canvas';
+import type {
 	Coordinate,
 	IChartApi,
 	isBusinessDay,
@@ -30,7 +30,6 @@ class TrianglePaneRenderer implements IPrimitivePaneRenderer {
 	}
 
 	draw(target: CanvasRenderingTarget2D) {
-		debugger;
 		target.useBitmapCoordinateSpace(scope => {
 			if (
 				this._p1.x === null ||
@@ -423,6 +422,14 @@ export class TriangleDrawingTool {
 		this._triangles = [];
 		this._chart.subscribeClick(this._clickHandler);
 		this._chart.subscribeCrosshairMove(this._moveHandler);
+
+
+    // TODO: temporary hardcoded triangle creation
+    if (this.isDrawing()) {
+      this.stopDrawing();
+    } else {
+      this.startDrawing();
+    }
 	}
 
 	private _clickHandler = (param: MouseEventParams) => this._onClick(param);

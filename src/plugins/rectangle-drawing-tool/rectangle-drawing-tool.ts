@@ -1,5 +1,5 @@
 import { CanvasRenderingTarget2D } from 'fancy-canvas';
-import {
+import type {
 	Coordinate,
 	IChartApi,
 	isBusinessDay,
@@ -377,6 +377,9 @@ export class RectangleDrawingTool {
 		this._rectangles = [];
 		this._chart.subscribeClick(this._clickHandler);
 		this._chart.subscribeCrosshairMove(this._moveHandler);
+
+    // TODO: remove this hardcoding later
+    this.startDrawing();
 	}
 
 	private _clickHandler = (param: MouseEventParams) => this._onClick(param);
