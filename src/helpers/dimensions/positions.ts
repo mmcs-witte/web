@@ -1,4 +1,4 @@
-import { BitmapPositionLength } from './common.ts';
+import type { BitmapPositionLength } from './common.ts';
 
 function centreOffset(lineBitmapWidth: number): number {
 	return Math.floor(lineBitmapWidth * 0.5);
