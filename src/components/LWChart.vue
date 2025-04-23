@@ -183,11 +183,11 @@ const addSeriesAndData = props => {
   	price: props.data[dataLength - 5].value * 1.10,
   };
 
-  createTrendLine(chart, series, point1, point2, 10);
+  //createTrendLine(chart, series, point1, point2, 10);
   createTriangleDrawingTool(chart, series);
-  createRectangleDrawingTool(chart, series);
-  createVolumeProfile(chart, series, props.data);
-  createAnchoredText(chart, series);
+  //createRectangleDrawingTool(chart, series);
+  //createVolumeProfile(chart, series, props.data);
+  //createAnchoredText(chart, series);
 };
 
 onMounted(() => {
@@ -202,6 +202,12 @@ onMounted(() => {
 	if (props.timeScaleOptions) {
 		chart.timeScale().applyOptions(props.timeScaleOptions);
 	}
+
+  // chart.applyOptions({
+	// 		crosshair: {
+	// 			mode: CrosshairMode.Normal,
+	// 		},
+	// 	})
 
 	chart.timeScale().fitContent(); 
 
