@@ -32,43 +32,50 @@ class TrianglePaneRenderer implements IPrimitivePaneRenderer {
 	draw(target: CanvasRenderingTarget2D) {
 		target.useBitmapCoordinateSpace(scope => {
 			if (
-				this._p1.x === null ||
-				this._p1.y === null ||
-				this._p2.x === null ||
-				this._p2.y === null
+				this._p1 == null ||
+				this._p2 === null
 			)
 			{
 				return;
 			}
-			const ctx = scope.context;
-			const horizontalPositions = positionsBox(
-				this._p1.x,
-				this._p2.x,
-				scope.horizontalPixelRatio
-			);
-			const verticalPositions = positionsBox(
-				this._p1.y,
-				this._p2.y,
-				scope.verticalPixelRatio
-			);
-			ctx.fillStyle = this._fillColor;
+			
+      const ctx = scope.context;
 
-			if (this._p3.x === null ||
-				this._p3.y === null)
+      const drawingPoint1 : ViewPoint = 
+      { 
+        x : Math.round(this._p1.x * scope.horizontalPixelRatio),
+        y: Math.round(this._p1.y * scope.verticalPixelRatio)
+      };
+      const drawingPoint2 : ViewPoint = 
+      { 
+        x : Math.round(this._p2.x * scope.horizontalPixelRatio),
+        y: Math.round(this._p2.y * scope.verticalPixelRatio)
+      };
+      var drawingPoint3 : ViewPoint = {x : null, y : null};
+      if (this._p3 != null) 
+        {
+          drawingPoint3 = { 
+            x : Math.round(this._p3.x * scope.horizontalPixelRatio),
+            y: Math.round(this._p3.y * scope.verticalPixelRatio)
+          };
+      }
+
+      // TODO: fix never reaching first if statement
+			if (this._p3 == null)
 			{
-				ctx.fillText("Triangle", horizontalPositions.position, verticalPositions.position);
-				ctx.fillRect(
-					horizontalPositions.position,
-					verticalPositions.position,
-					horizontalPositions.length,
-					verticalPositions.length
-				);
+				ctx.beginPath();
+				ctx.moveTo(drawingPoint1.x, drawingPoint1.y);
+        ctx.lineTo(drawingPoint2.x, drawingPoint2.y);
+        ctx.strokeStyle = this._fillColor;
+        ctx.lineWidth = scope.verticalPixelRatio;
+				ctx.stroke();
 			}
 			else {
+        ctx.fillStyle = this._fillColor;
 				ctx.beginPath();
-				ctx.moveTo(this._p1.x, this._p1.y);
-				ctx.lineTo(this._p2.x, this._p2.y);
-				ctx.lineTo(this._p3.x, this._p3.y);
+				ctx.moveTo(drawingPoint1.x, drawingPoint1.y);
+        ctx.lineTo(drawingPoint2.x, drawingPoint2.y);
+        ctx.lineTo(drawingPoint3.x, drawingPoint3.y);
 				ctx.fill();
 			}
 		});

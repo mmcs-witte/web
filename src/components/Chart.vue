@@ -3,6 +3,10 @@
 // Check out https://vuejs.org/api/sfc-script-setup.html#script-setup
 import { ref } from 'vue';
 
+import {
+	CrosshairMode
+} from 'lightweight-charts';
+
 /*
  * There are example components in both API styles: Options API, and Composition API
  *
@@ -65,6 +69,8 @@ function generateSampleData(ohlc) {
   return res;
 }
 
+// Adding explicit chart options
+// TODO: fix this in the future 
 const chartOptions = ref({
   layout: {
     background: {
@@ -76,10 +82,26 @@ const chartOptions = ref({
     vertLines: { color: '#444' },
     horzLines: { color: '#444' },
   },
+  crosshair: {
+    mode: CrosshairMode.Normal,
+    vertLine: {
+        visible: true,
+        labelVisible: true,
+    },
+    horzLine: {
+        visible: true,
+        labelVisible: true,
+    }
+  },
   });
 const data = ref(generateSampleData(false));
+// Setting series options manually
+// TODO: set it from code later
 const seriesOptions = ref({
-  color: 'rgb(45, 77, 205)',
+  color: 'rgb(255, 0, 0)',
+  priceLineVisible: false,
+	lastValueVisible: true,
+  
 });
 
 const chartType = ref(chartStore.currentType);
@@ -149,7 +171,12 @@ const changeData = () => {
       newData.reduce((s, c) => {
         return s + c.value;
       }, 0) / newData.length;
-    seriesOptions.value = { baseValue: { type: 'price', price: average } };
+    seriesOptions.value = { 
+      baseValue: { type: 'price', price: average },
+      priceLineVisible: false,
+	    lastValueVisible: true,
+      color: 'rgb(255, 0, 0)'
+    };
   }
 };
 
