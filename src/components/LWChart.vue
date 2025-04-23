@@ -3,7 +3,7 @@ import {
 	ref,
 	onMounted,
 	onUnmounted,
-	watch,
+	watch
 } from 'vue';
 import {
 	createChart,
@@ -154,6 +154,19 @@ const createVolumeProfile = (chart, series, data) => {
   series.attachPrimitive(vp);
 };
 
+const createAnchoredText = (chart, series) => {
+  const anchoredText = new AnchoredText({
+       vertAlign: 'middle',
+       horzAlign: 'middle',
+       text: 'Witte',
+       lineHeight: 54,
+       font: 'bold 54px Arial',
+       color: 'white',
+     });
+  series.attachPrimitive(anchoredText); 
+};
+
+
 // Creates the chart series and sets the data.
 const addSeriesAndData = props => {
 	const seriesDefinition = getChartSeriesDefinition(props.type);
@@ -170,10 +183,11 @@ const addSeriesAndData = props => {
   	price: props.data[dataLength - 5].value * 1.10,
   };
 
-  // createTrendLine(chart, series, point1, point2, 10);
-  // createTriangleDrawingTool(chart, series);
-  //createRectangleDrawingTool(chart, series);
+  createTrendLine(chart, series, point1, point2, 10);
+  createTriangleDrawingTool(chart, series);
+  createRectangleDrawingTool(chart, series);
   createVolumeProfile(chart, series, props.data);
+  createAnchoredText(chart, series);
 };
 
 onMounted(() => {
