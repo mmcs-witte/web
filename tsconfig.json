@@ -7,7 +7,7 @@
   ],
   "compilerOptions": {
     "paths": {
-      "lightweight-charts": ["vendor/lw-charts/src"],
+      "lightweight-charts": ["./vendor/lw-charts/src"],
     }
   },
 }
