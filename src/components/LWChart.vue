@@ -4,8 +4,6 @@ import {
 	onMounted,
 	onUnmounted,
 	watch,
-	defineExpose,
-	defineProps,
 } from 'vue';
 import {
 	createChart,
