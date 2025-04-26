@@ -163,7 +163,7 @@ const changeType = () => {
 </script>
 
 <template>
-  <div class="chart-container">
+  <div class="chart-container rounded-md">
     <LWChart
       :type="chartType"
       :data="data"
@@ -177,6 +177,7 @@ const changeType = () => {
   <button type="button" @click="changeType">Change Chart Type</button>
   <button type="button" @click="changeData">Change Data</button>
 </template>
+
 <style scoped>
 .chart-container {
   height: calc(100% - 3.2em);
