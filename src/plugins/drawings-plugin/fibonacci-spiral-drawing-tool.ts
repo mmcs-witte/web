@@ -32,25 +32,26 @@ class FibSpiralPaneRenderer implements IPrimitivePaneRenderer {
 
   draw(target: CanvasRenderingTarget2D) {
     target.useBitmapCoordinateSpace(scope => {
-		  if (
-		  	this._p1.x === null ||
-		  	this._p1.y === null ||
-		  	this._p2.x === null ||
-		  	this._p2.y === null
-		  )
-		  	return;
+      // TODO: implement drawing of a spiral
+		  // if (
+		  // 	this._p1.x === null ||
+		  // 	this._p1.y === null ||
+		  // 	this._p2.x === null ||
+		  // 	this._p2.y === null
+		  // )
+		  // 	return;
       
-      const ctx = scope.context;
+      // const ctx = scope.context;
 
-      const calculateDrawingPoint = (point: ViewPoint): ViewPoint =>  {
-        return { 
-          x : Math.round(point.x * scope.horizontalPixelRatio),
-          y : Math.round(point.y * scope.verticalPixelRatio)
-        };
-      };
+      // const calculateDrawingPoint = (point: ViewPoint): ViewPoint =>  {
+      //   return { 
+      //     x : Math.round(point.x * scope.horizontalPixelRatio),
+      //     y : Math.round(point.y * scope.verticalPixelRatio)
+      //   };
+      // };
 
-      const drawingPoint1 : ViewPoint = calculateDrawingPoint({x: this._p1.x, y: this._p1.y});
-      const drawingPoint2 : ViewPoint = calculateDrawingPoint({x: this._p2.x, y: this._p2.y});
+      // const drawingPoint1 : ViewPoint = calculateDrawingPoint({x: this._p1.x, y: this._p1.y});
+      // const drawingPoint2 : ViewPoint = calculateDrawingPoint({x: this._p2.x, y: this._p2.y});
     });
   }
 }
@@ -70,6 +71,72 @@ class FibSpiralPaneView implements IPrimitivePaneView {
 	}
 
   updateRenderInfo(p1: ViewPoint, p2: ViewPoint): FibSpiralRenderInfo {
+    // auto initDir = p1 - p0;
+    // double angle = MathHelper::AngleBetweenVectors(CFPoint{ 1, 0 }, initDir);
+    // MathHelper::RotateVector(initDir, -angle);
+    // CFPoint rotationCenter = p0;
+    // CFPoint directionPoint = p0 + initDir;
+  
+    // double a = MathHelper::GetDistanceBetweenPoints(rotationCenter, directionPoint) / (sqrt(55.0) + 1);
+  
+    // constexpr size_t numArs = 11;
+    // std::vector<CFPoint> circleCenters(numArs);
+    // float fClockwiseCoef = bCounterClockwise ? -1.0 : 1.0;
+  
+    // circleCenters[0] = rotationCenter + CFPoint{ 0.0       , fClockwiseCoef * a};
+    // circleCenters[1] = rotationCenter + CFPoint{ -a	       , fClockwiseCoef * a};
+    // circleCenters[2] = rotationCenter + CFPoint{ -a	       , fClockwiseCoef * 0.0};
+    // circleCenters[3] = rotationCenter + CFPoint{ a		   , fClockwiseCoef * 0.0};
+    // circleCenters[4] = rotationCenter + CFPoint{ a         , fClockwiseCoef * 3.0 * a};
+    // circleCenters[5] = rotationCenter + CFPoint{ -4.0 * a  , fClockwiseCoef * 3.0 * a };
+    // circleCenters[6] = rotationCenter + CFPoint{ -4.0 * a  , fClockwiseCoef * -5.0 * a };
+    // circleCenters[7] = rotationCenter + CFPoint{ 9.0 * a   , fClockwiseCoef * -5.0 * a };
+    
+    // circleCenters[8] = rotationCenter + CFPoint{ 9.0 * a   , fClockwiseCoef * 16.0 * a };
+    // circleCenters[9] = rotationCenter + CFPoint{ -25.0 * a , fClockwiseCoef * 16.0 * a };
+    // circleCenters[10] = rotationCenter + CFPoint{ -25.0 * a , fClockwiseCoef * -39.0 * a };
+  
+    // std::vector<double> arcRadiuses(numArs);
+    // arcRadiuses[0] = a;
+    // arcRadiuses[1] = 2.0 * a;
+    // for (int i = 2; i < 11; ++i) {
+    //   arcRadiuses[i] = arcRadiuses[i - 1] + arcRadiuses[i - 2];
+    // }
+    
+    // std::vector<std::pair<double, double>> arcAngles(numArs);
+    
+    // if (bGDI && bCounterClockwise) {
+    //   arcAngles[0] = std::pair<double, double>{ 270.0, 90.0 };
+    //   arcAngles[1] = std::pair<double, double>{ 0.0, 90.0 };
+    //   arcAngles[2] = std::pair<double, double>{ 90.0, 90.0 };
+      
+    //   arcAngles[3] = std::pair<double, double>{ 180.0, 90.0 };
+    //   arcAngles[4] = std::pair<double, double>{ 270.0, 90.0 };
+      
+    //   arcAngles[5] = std::pair<double, double>{ 0.0, 90.0 };
+    //   arcAngles[6] = std::pair<double, double>{ 90.0, 90.0 };
+    //   arcAngles[7] = std::pair<double, double>{ 180.0, 90.0 };
+    //   arcAngles[8] = std::pair<double, double>{ 270.0, 90.0 };
+    //   arcAngles[9] = std::pair<double, double>{ 0.0, 90.0 };
+    //   arcAngles[10] = std::pair<double, double>{ 90.0, 70.0 };
+    // }
+    
+  
+    // // Extend line
+    // CFPoint points[2] = { p0, p1 };
+    // ExtendLineToSecondPoint(points);
+    // auto rayLength = MathHelper::GetDistanceBetweenPoints(points[0], points[1]);
+  
+    // fibSpiralDrawInfo.rotationCenter = rotationCenter;
+    // fibSpiralDrawInfo.spiralRotationAngle = angle;
+    // fibSpiralDrawInfo.rayStart = rotationCenter;
+    // fibSpiralDrawInfo.rayEnd = fibSpiralDrawInfo.rayStart + CFPoint{ rayLength, 0.0 };
+    // fibSpiralDrawInfo.numArs = 11;
+    // fibSpiralDrawInfo.arcCenters = circleCenters;
+    // fibSpiralDrawInfo.arcRadiuses = arcRadiuses;
+    // fibSpiralDrawInfo.arcAngles = arcAngles;
+    
+    
     const rotationCenter = p1;
     const spiralRotationAngle: number = 0;
     const numArs: number = 11;
@@ -258,13 +325,14 @@ interface Point {
 	price: number;
 }
 
+
 export interface FibSpiralRenderInfo {
   rotationCenter: ViewPoint;
   spiralRotationAngle: number;
   numArs: number;
   arcCenters: ViewPoint[];
   arcRadiuses: number[];
-  arcAngles: number[];
+  arcAngles: Record<number, number>;
   rayStart: ViewPoint;
   rayEnd: ViewPoint;
 }
