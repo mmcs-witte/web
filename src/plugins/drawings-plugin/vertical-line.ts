@@ -11,7 +11,8 @@ import {
 	SeriesType,
 	Time,
 } from 'lightweight-charts';
-import { positionsLine } from '../../helpers/dimensions/positions.ts';
+
+import { positionsLine } from '../../helpers/dimensions/positions';
 
 class VertLinePaneRenderer implements IPrimitivePaneRenderer {
 	_x: Coordinate | null = null;

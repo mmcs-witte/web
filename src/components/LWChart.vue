@@ -15,9 +15,11 @@ import {
 	BaselineSeries,
 } from 'lightweight-charts';
 import { AnchoredText } from "../plugins/anchored-text/anchored-text.ts";
-import { TrendLine } from '../plugins/trend-line/trend-line.ts';
-import { TriangleDrawingTool } from '../plugins/triangle-drawing-tool/triangle-drawing-tool.ts';
-import { RectangleDrawingTool } from '../plugins/rectangle-drawing-tool/rectangle-drawing-tool.ts';
+import { TrendLine } from '../plugins/drawings-plugin/trend-line.ts';
+import { RectangleDrawingTool } from '../plugins/drawings-plugin/rectangle-drawing-tool.ts';
+import { TriangleDrawingTool } from '../plugins/drawings-plugin/triangle-drawing-tool.ts';
+import { FibChannelDrawingTool } from '../plugins/drawings-plugin/fibonacci-channel-drawing-tool.ts';
+
 import { VolumeProfile } from '../plugins/volume-profile/volume-profile.ts';
 
 const props = defineProps({
@@ -104,23 +106,19 @@ const createTrendLine = (chart, series, point1, point2, width) => {
 const createRectangleDrawingTool = (chart, series, ) => {
   const rectDrawing = new RectangleDrawingTool(chart, series, 
 	  null,
-    {
-	    fillColor: 'rgba(200, 50, 100, 0.75)',
-	    previewFillColor: 'rgba(200, 50, 100, 0.25)',
-	    labelColor: 'rgba(200, 50, 100, 1)',
-	    labelTextColor: 'white',
-	    showLabels: true,
-	    priceLabelFormatter: (price) => price.toFixed(2),
-	    timeLabelFormatter: (time) => {
-	    	if (typeof time == 'string') return time;
-	    	const date = isBusinessDay(time)
-	    		? new Date(time.year, time.month, time.day)
-	    		: new Date(time * 1000);
-	    	return date.toLocaleDateString();
-	    },
-  }
+    null
   );
   series.attachPrimitive(rectDrawing);
+  rectDrawing.startDrawing();
+};
+
+const createFibChannelDrawingTool = (chart, series, ) => {
+  const fibChannelDrawing = new FibChannelDrawingTool(chart, series, 
+	  null,
+    null
+  );
+  series.attachPrimitive(fibChannelDrawing);
+  fibChannelDrawing.startDrawing();
 };
 
 const createTriangleDrawingTool = (chart, series) => {
@@ -185,8 +183,8 @@ const addSeriesAndData = props => {
   };
 
   //createTrendLine(chart, series, point1, point2, 10);
-  createTriangleDrawingTool(chart, series);
-  //createRectangleDrawingTool(chart, series);
+  //createTriangleDrawingTool(chart, series);
+  createRectangleDrawingTool(chart, series);
   //createVolumeProfile(chart, series, props.data);
   //createAnchoredText(chart, series);
 };
