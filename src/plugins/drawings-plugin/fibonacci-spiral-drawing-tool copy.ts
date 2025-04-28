@@ -20,17 +20,16 @@ import { ensureDefined } from '../../helpers/assertions.ts';
 import { PluginBase } from '../plugin-base.ts';
 import { positionsBox } from '../../helpers/dimensions/positions.ts';
 
-class RectanglePaneRenderer implements IPrimitivePaneRenderer {
-	_p1: ViewPoint;
-	_p2: ViewPoint;
-	_fillColor: string;
 
-	constructor(p1: ViewPoint, p2: ViewPoint, fillColor: string) {
-		this._p1 = p1;
-		this._p2 = p2;
-		this._fillColor = fillColor;
+class FibSpiralPaneRenderer implements IPrimitivePaneRenderer {
+  _fibSpiralRendeInfo: FibSpiralRenderInfo;
+  _lineColor: string;
+
+	constructor(renderInfo: FibSpiralRenderInfo, lineColor: string) {
+		this._fibSpiralRendeInfo = renderInfo;
+    this._lineColor = lineColor;
 	}
-  
+
   draw(target: CanvasRenderingTarget2D) {
     target.useBitmapCoordinateSpace(scope => {
 		  if (
@@ -52,55 +51,6 @@ class RectanglePaneRenderer implements IPrimitivePaneRenderer {
 
       const drawingPoint1 : ViewPoint = calculateDrawingPoint({x: this._p1.x, y: this._p1.y});
       const drawingPoint2 : ViewPoint = calculateDrawingPoint({x: this._p2.x, y: this._p2.y});
-
-      const high = Math.min(drawingPoint1.y, drawingPoint2.y);
-      const low = Math.max(drawingPoint1.y, drawingPoint2.y);
-      const height = low - high;
-
-      ctx.font = '36px Arial';
-
-      const fibonacciLevels = [0, 0.236, 0.382, 0.5, 0.618, 0.786, 1];
-      const fibonacciLineColors = ['rgba(234, 53, 40, 0.93)', 'rgba(244, 244, 19, 0.94)','rgba(35, 220, 87, 0.75)',
-        'rgba(7, 227, 179, 0.75)','rgba(35, 186, 220, 0.75)','rgba(149, 35, 220, 0.75)'];
-
-      const oldGlobalAlpha = ctx.globalAlpha;
-      ctx.globalAlpha = 0.25;
-
-      //  filling background first
-      for (let i: number = 0; i < fibonacciLevels.length; i++) {
-        const currIndex = i;
-        const nextIndex = currIndex + 1 < fibonacciLevels.length ? currIndex + 1 : currIndex;
-        const curLevel: number = fibonacciLevels[currIndex];
-        const nextLevel: number = fibonacciLevels[nextIndex];
-        if (currIndex != nextIndex) {
-          ctx.fillStyle = fibonacciLineColors[nextIndex % fibonacciLineColors.length];
-          const currY = low - height * curLevel;
-          const nextY = low - height * nextLevel;
-
-          ctx.beginPath();
-          ctx.moveTo(drawingPoint1.x, currY);
-          ctx.lineTo(drawingPoint2.x, currY);
-          ctx.lineTo(drawingPoint2.x, nextY);
-          ctx.lineTo(drawingPoint1.x, nextY);
-          ctx.fill();
-        }
-      }
-
-      ctx.globalAlpha = oldGlobalAlpha;
-
-      for (let i: number = 0; i < fibonacciLevels.length; i++) {
-        ctx.strokeStyle = fibonacciLineColors[i % fibonacciLineColors.length];
-        ctx.fillStyle = fibonacciLineColors[i % fibonacciLineColors.length];
-        ctx.lineWidth = 5;
-
-        const level = fibonacciLevels[i];
-        const y = low - height * level;
-        ctx.beginPath();
-        ctx.moveTo(drawingPoint1.x, y);
-        ctx.lineTo(drawingPoint2.x, y);
-        ctx.stroke();
-        ctx.fillText(`${(level * 100).toFixed(1)}%`, (drawingPoint2.x + 4), (y - 2));
-      }
     });
   }
 }
@@ -119,7 +69,30 @@ class FibSpiralPaneView implements IPrimitivePaneView {
 		this._source = source;
 	}
 
-	update() {
+  updateRenderInfo(p1: ViewPoint, p2: ViewPoint): FibSpiralRenderInfo {
+    const rotationCenter = p1;
+    const spiralRotationAngle: number = 0;
+    const numArs: number = 11;
+    const arcCenters: ViewPoint[] = [];
+    const arcRadiuses: number[] = [];
+    const arcAngles: number[] = [];
+    // TODO: implement extending line logic
+    const rayStart = p1;
+    const rayEnd = p2;
+
+    return {
+      rotationCenter,
+      spiralRotationAngle,
+      numArs,
+      arcCenters,
+      arcRadiuses,
+      arcAngles,
+      rayStart,
+      rayEnd,
+    }
+  } 
+
+  update() {
 		const series = this._source.series;
 		const y1 = series.priceToCoordinate(this._source._p1.price);
 		const y2 = series.priceToCoordinate(this._source._p2.price);
@@ -130,10 +103,10 @@ class FibSpiralPaneView implements IPrimitivePaneView {
 		this._p2 = { x: x2, y: y2 };
 	}
 
+
 	renderer() {
-		return new RectanglePaneRenderer(
-			this._p1,
-			this._p2,
+		return new FibSpiralPaneRenderer(
+			this.updateRenderInfo(this._p1, this._p2),
 			this._source._options.fillColor
 		);
 	}
@@ -283,6 +256,17 @@ class RectanglePriceAxisView extends RectangleAxisView {
 interface Point {
 	time: Time;
 	price: number;
+}
+
+export interface FibSpiralRenderInfo {
+  rotationCenter: ViewPoint;
+  spiralRotationAngle: number;
+  numArs: number;
+  arcCenters: ViewPoint[];
+  arcRadiuses: number[];
+  arcAngles: number[];
+  rayStart: ViewPoint;
+  rayEnd: ViewPoint;
 }
 
 export interface FibSpiralDrawingToolOptions {

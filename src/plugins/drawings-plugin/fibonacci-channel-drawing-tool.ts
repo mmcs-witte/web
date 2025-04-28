@@ -20,7 +20,7 @@ import { ensureDefined } from '../../helpers/assertions.ts';
 import { PluginBase } from '../plugin-base.ts';
 import { positionsBox } from '../../helpers/dimensions/positions.ts';
 
-class RectanglePaneRenderer implements IPrimitivePaneRenderer {
+class FibChannelPaneRenderer implements IPrimitivePaneRenderer {
 	_p1: ViewPoint;
 	_p2: ViewPoint;
 	_fillColor: string;
@@ -130,7 +130,7 @@ class FibChannelPaneView implements IPrimitivePaneView {
 	}
 
 	renderer() {
-		return new RectanglePaneRenderer(
+		return new FibChannelPaneRenderer(
 			this._p1,
 			this._p2,
 			this._source._options.fillColor
