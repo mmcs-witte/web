@@ -125,14 +125,15 @@ const createRectangleDrawingTool = (chart, series, ) => {
 
 const createTriangleDrawingTool = (chart, series) => {
   const triangle = new TriangleDrawingTool(
-	chart,
-	series,
-	null,
-	{
-		showLabels: false,
-	}
+	  chart,
+	  series,
+	  null,
+	  {
+	  	showLabels: false,
+	  }
   );
   series.attachPrimitive(triangle);
+  triangle.startDrawing();
 };
 
 const createVolumeProfile = (chart, series, data) => {
