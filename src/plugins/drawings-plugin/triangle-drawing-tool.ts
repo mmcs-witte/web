@@ -28,47 +28,7 @@ class TrianglePaneRenderer implements IPrimitivePaneRenderer {
 		this._fillColor = fillColor;
 	}
 
-	// draw(target: CanvasRenderingTarget2D) {
-	// 	target.useBitmapCoordinateSpace(scope => {
-	// 		if (this._points.length < 2) {
-	// 			return;
-	// 		}
-			
-  //     const ctx = scope.context;
-
-  //     const calculateDrawingPoint = (point: ViewPoint): ViewPoint =>  {
-  //       return { 
-  //         x : Math.round(point.x * scope.horizontalPixelRatio),
-  //         y : Math.round(point.y * scope.verticalPixelRatio)
-  //       };
-  //     };
-
-  //     const drawingPoint1 : ViewPoint = calculateDrawingPoint(this._points[0]);
-  //     const drawingPoint2 : ViewPoint = calculateDrawingPoint(this._points[1]);
-  //     const drawingPoint3 : ViewPoint = this._points.length > 2 ? 
-  //       calculateDrawingPoint(this._points[2]) :
-  //       drawingPoint2;
-
-	// 		if (this._points.length < 3)
-	// 		{
-	// 			ctx.beginPath();
-	// 			ctx.moveTo(drawingPoint1.x, drawingPoint1.y);
-  //       ctx.lineTo(drawingPoint2.x, drawingPoint2.y);
-  //       ctx.strokeStyle = this._fillColor;
-  //       ctx.lineWidth = scope.verticalPixelRatio;
-	// 			ctx.stroke();
-	// 		}
-	// 		else {
-  //       ctx.fillStyle = this._fillColor;
-	// 			ctx.beginPath();
-	// 			ctx.moveTo(drawingPoint1.x, drawingPoint1.y);
-  //       ctx.lineTo(drawingPoint2.x, drawingPoint2.y);
-  //       ctx.lineTo(drawingPoint3.x, drawingPoint3.y);
-	// 			ctx.fill();
-	// 		}
-	// 	});
-	// }
-  draw(target: CanvasRenderingTarget2D) {
+	draw(target: CanvasRenderingTarget2D) {
 		target.useBitmapCoordinateSpace(scope => {
 			if (this._points.length < 2) {
 				return;
@@ -89,54 +49,22 @@ class TrianglePaneRenderer implements IPrimitivePaneRenderer {
         calculateDrawingPoint(this._points[2]) :
         drawingPoint2;
 
-			const high = Math.min(drawingPoint1.y, drawingPoint2.y);
-			const low = Math.max(drawingPoint1.y, drawingPoint2.y);
-			const height = low - high;
-
-			ctx.font = '36px Arial';
-
-      const fibonacciLevels = [0, 0.236, 0.382, 0.5, 0.618, 0.786, 1];
-      const fibonacciLineColors = ['rgba(234, 53, 40, 0.93)', 'rgba(244, 244, 19, 0.94)','rgba(35, 220, 87, 0.75)',
-        'rgba(7, 227, 179, 0.75)','rgba(35, 186, 220, 0.75)','rgba(149, 35, 220, 0.75)'];
-
-      const oldGlobalAlpha = ctx.globalAlpha;
-      ctx.globalAlpha = 0.25;
-
-      for (let i: number = 0; i < fibonacciLevels.length; i++) {
-        // TODO: filling background first
-        const currIndex = i;
-        const nextIndex = currIndex + 1 < fibonacciLevels.length ? currIndex + 1 : currIndex;
-        const curLevel: number = fibonacciLevels[currIndex];
-        const nextLevel: number = fibonacciLevels[nextIndex];
-        if (currIndex != nextIndex) {
-          ctx.fillStyle = fibonacciLineColors[nextIndex % fibonacciLineColors.length];
-          const currY = low - height * curLevel;
-          const nextY = low - height * nextLevel;
-
-          ctx.beginPath();
-          ctx.moveTo(drawingPoint1.x, currY);
-          ctx.lineTo(drawingPoint2.x, currY);
-          ctx.lineTo(drawingPoint2.x, nextY);
-          ctx.lineTo(drawingPoint1.x, nextY);
-          ctx.fill();
-        }
-      }
-
-      ctx.globalAlpha = oldGlobalAlpha;
-			ctx.fillStyle = 'rgba(39, 16, 241, 0.93)';
-
-      for (let i: number = 0; i < fibonacciLevels.length; i++) {
-        ctx.strokeStyle = fibonacciLineColors[i % fibonacciLineColors.length];
-        ctx.fillStyle = fibonacciLineColors[i % fibonacciLineColors.length];
-        ctx.lineWidth = 5;
-
-        const level = fibonacciLevels[i];
-        const y = low - height * level;
+			if (this._points.length < 3)
+			{
 				ctx.beginPath();
-				ctx.moveTo(drawingPoint1.x, y);
-				ctx.lineTo(drawingPoint2.x, y);
+				ctx.moveTo(drawingPoint1.x, drawingPoint1.y);
+        ctx.lineTo(drawingPoint2.x, drawingPoint2.y);
+        ctx.strokeStyle = this._fillColor;
+        ctx.lineWidth = scope.verticalPixelRatio;
 				ctx.stroke();
-				ctx.fillText(`${(level * 100).toFixed(1)}%`, (drawingPoint2.x + 4), (y - 2));
+			}
+			else {
+        ctx.fillStyle = this._fillColor;
+				ctx.beginPath();
+				ctx.moveTo(drawingPoint1.x, drawingPoint1.y);
+        ctx.lineTo(drawingPoint2.x, drawingPoint2.y);
+        ctx.lineTo(drawingPoint3.x, drawingPoint3.y);
+				ctx.fill();
 			}
 		});
 	}
