@@ -20,6 +20,7 @@ import { ensureDefined } from '../../helpers/assertions.ts';
 import { PluginBase } from '../plugin-base.ts';
 import { positionsBox } from '../../helpers/dimensions/positions.ts';
 
+import { Point as Point2D, Vector as Vector2D } from '@flatten-js/core';
 
 class FibSpiralPaneRenderer implements IPrimitivePaneRenderer {
   _fibSpiralRendeInfo: FibSpiralRenderInfo;
@@ -32,23 +33,17 @@ class FibSpiralPaneRenderer implements IPrimitivePaneRenderer {
 
   draw(target: CanvasRenderingTarget2D) {
     target.useBitmapCoordinateSpace(scope => {
-      // TODO: implement drawing of a spiral
-		  // if (
-		  // 	this._p1.x === null ||
-		  // 	this._p1.y === null ||
-		  // 	this._p2.x === null ||
-		  // 	this._p2.y === null
-		  // )
-		  // 	return;
-      
-      // const ctx = scope.context;
+      if (this._fibSpiralRendeInfo.numArcs == 0)
+        return;
 
-      // const calculateDrawingPoint = (point: ViewPoint): ViewPoint =>  {
-      //   return { 
-      //     x : Math.round(point.x * scope.horizontalPixelRatio),
-      //     y : Math.round(point.y * scope.verticalPixelRatio)
-      //   };
-      // };
+      const ctx = scope.context;
+
+      const calculateDrawingPoint = (point: ViewPoint): ViewPoint =>  {
+        return { 
+          x : Math.round(point.x * scope.horizontalPixelRatio),
+          y : Math.round(point.y * scope.verticalPixelRatio)
+        };
+      };
 
       // const drawingPoint1 : ViewPoint = calculateDrawingPoint({x: this._p1.x, y: this._p1.y});
       // const drawingPoint2 : ViewPoint = calculateDrawingPoint({x: this._p2.x, y: this._p2.y});
@@ -71,86 +66,89 @@ class FibSpiralPaneView implements IPrimitivePaneView {
 	}
 
   updateRenderInfo(p1: ViewPoint, p2: ViewPoint): FibSpiralRenderInfo {
-    // auto initDir = p1 - p0;
-    // double angle = MathHelper::AngleBetweenVectors(CFPoint{ 1, 0 }, initDir);
-    // MathHelper::RotateVector(initDir, -angle);
-    // CFPoint rotationCenter = p0;
-    // CFPoint directionPoint = p0 + initDir;
-  
-    // double a = MathHelper::GetDistanceBetweenPoints(rotationCenter, directionPoint) / (sqrt(55.0) + 1);
-  
-    // constexpr size_t numArs = 11;
-    // std::vector<CFPoint> circleCenters(numArs);
-    // float fClockwiseCoef = bCounterClockwise ? -1.0 : 1.0;
-  
-    // circleCenters[0] = rotationCenter + CFPoint{ 0.0       , fClockwiseCoef * a};
-    // circleCenters[1] = rotationCenter + CFPoint{ -a	       , fClockwiseCoef * a};
-    // circleCenters[2] = rotationCenter + CFPoint{ -a	       , fClockwiseCoef * 0.0};
-    // circleCenters[3] = rotationCenter + CFPoint{ a		   , fClockwiseCoef * 0.0};
-    // circleCenters[4] = rotationCenter + CFPoint{ a         , fClockwiseCoef * 3.0 * a};
-    // circleCenters[5] = rotationCenter + CFPoint{ -4.0 * a  , fClockwiseCoef * 3.0 * a };
-    // circleCenters[6] = rotationCenter + CFPoint{ -4.0 * a  , fClockwiseCoef * -5.0 * a };
-    // circleCenters[7] = rotationCenter + CFPoint{ 9.0 * a   , fClockwiseCoef * -5.0 * a };
+    let spiralRotationCenter = {x: 0, y: 0};
+    let spiralRotationAngle: number = 0;
+    let numArcs: number = 0;
+    let arcCenters: ViewPoint[] = [];
+    let arcRadiuses: number[] = [];
+    let arcAngles: number[][] = [];
+    let rayStart = {x: 0, y: 0};
+    let rayEnd = {x: 0, y: 0};;
     
-    // circleCenters[8] = rotationCenter + CFPoint{ 9.0 * a   , fClockwiseCoef * 16.0 * a };
-    // circleCenters[9] = rotationCenter + CFPoint{ -25.0 * a , fClockwiseCoef * 16.0 * a };
-    // circleCenters[10] = rotationCenter + CFPoint{ -25.0 * a , fClockwiseCoef * -39.0 * a };
-  
-    // std::vector<double> arcRadiuses(numArs);
-    // arcRadiuses[0] = a;
-    // arcRadiuses[1] = 2.0 * a;
-    // for (int i = 2; i < 11; ++i) {
-    //   arcRadiuses[i] = arcRadiuses[i - 1] + arcRadiuses[i - 2];
-    // }
-    
-    // std::vector<std::pair<double, double>> arcAngles(numArs);
-    
-    // if (bGDI && bCounterClockwise) {
-    //   arcAngles[0] = std::pair<double, double>{ 270.0, 90.0 };
-    //   arcAngles[1] = std::pair<double, double>{ 0.0, 90.0 };
-    //   arcAngles[2] = std::pair<double, double>{ 90.0, 90.0 };
+    const pointsAreValid = p1.x != null && p1.y != null && p2.x != null && p2.y != null;
+    if (pointsAreValid) {
+      const p1: Vector2D = new Vector2D(this._p1.x, this._p1.y);
+      const p2: Vector2D = new Vector2D(this._p2.x, this._p2.y);
+
+      const initDir = p2.subtract(p1);
+      spiralRotationAngle = initDir.angleTo(new Vector2D(1, 0));
+      initDir.rotate(-spiralRotationAngle);
+
+      const rotationCenter: Vector2D = p1;
+      const directionPoint: Vector2D = p1.add(initDir);
+
+      let a: number;
+      {
+        const p1 = new Point2D(rotationCenter.x, rotationCenter.y);
+        const p2 = new Point2D(directionPoint.x, directionPoint.y);
+        a = p1.distanceTo(p2)[0] / (Math.sqrt(55.0) + 1);
+      }
+
+      numArcs = 11;
+
+      const clockwiseCoef: number = -1.0;
+      arcCenters = new Array<ViewPoint>(numArcs);
+
+      // TODO: make sure this cast works
+      arcCenters[0] = (rotationCenter.add(new Vector2D(0.0, clockwiseCoef * a )));
+      arcCenters[1] = (rotationCenter.add(new Vector2D(-a, clockwiseCoef * a )));
+      arcCenters[2] = (rotationCenter.add(new Vector2D(-a, clockwiseCoef * 0.0 )));
+      arcCenters[3] = (rotationCenter.add(new Vector2D(a, clockwiseCoef * 0.0 )));
+      arcCenters[4] = (rotationCenter.add(new Vector2D(a, clockwiseCoef * 3.0 * a )));
+      arcCenters[5] = (rotationCenter.add(new Vector2D(-4.0 * a, clockwiseCoef * 3.0 * a )));
+      arcCenters[6] = (rotationCenter.add(new Vector2D(-4.0 * a, clockwiseCoef * -5.0 * a )));
+      arcCenters[7] = (rotationCenter.add(new Vector2D(9.0 * a, clockwiseCoef * -5.0 * a )));
+      arcCenters[8] = (rotationCenter.add(new Vector2D(9.0 * a, clockwiseCoef * 16.0 * a )));
+      arcCenters[9] = (rotationCenter.add(new Vector2D(-25.0 * a, clockwiseCoef * 16.0 * a )));
+      arcCenters[10] = (rotationCenter.add(new Vector2D(-25.0 * a, clockwiseCoef * -39.0 * a )));
+
+      arcRadiuses = new Array<number>(numArcs);
+      arcRadiuses[0] = a;
+      arcRadiuses[1] = 2.0 * a;
+      for (let i = 2; i < 11; i++) {
+        arcRadiuses[i] = arcRadiuses[i - 1] + arcRadiuses[i - 2];
+      }
       
-    //   arcAngles[3] = std::pair<double, double>{ 180.0, 90.0 };
-    //   arcAngles[4] = std::pair<double, double>{ 270.0, 90.0 };
-      
-    //   arcAngles[5] = std::pair<double, double>{ 0.0, 90.0 };
-    //   arcAngles[6] = std::pair<double, double>{ 90.0, 90.0 };
-    //   arcAngles[7] = std::pair<double, double>{ 180.0, 90.0 };
-    //   arcAngles[8] = std::pair<double, double>{ 270.0, 90.0 };
-    //   arcAngles[9] = std::pair<double, double>{ 0.0, 90.0 };
-    //   arcAngles[10] = std::pair<double, double>{ 90.0, 70.0 };
-    // }
-    
+      arcAngles = new Array<number[]>(numArcs);
+      arcAngles[0] = [270.0, 90.0];
+      arcAngles[1] = [0.0, 90.0];
+      arcAngles[2] = [90.0, 90.0];  
+      arcAngles[3] = [180.0, 90.0];
+      arcAngles[4] = [270.0, 90.0]; 
+      arcAngles[5] = [0.0, 90.0];
+      arcAngles[6] = [90.0, 90.0];
+      arcAngles[7] = [180.0, 90.0];
+      arcAngles[8] = [270.0, 90.0];
+      arcAngles[9] = [0.0, 90.0];
+      arcAngles[10] = [90.0, 70.0];
+
+      spiralRotationCenter = {x: p1.x, y: p1.y };
+
+      // TODO: learn how to Extend line a bit later
+      // CFPoint points[2] = { p0, p1 };
+      // ExtendLineToSecondPoint(points);
+      // auto rayLength = MathHelper::GetDistanceBetweenPoints(points[0], points[1]);
   
-    // // Extend line
-    // CFPoint points[2] = { p0, p1 };
-    // ExtendLineToSecondPoint(points);
-    // auto rayLength = MathHelper::GetDistanceBetweenPoints(points[0], points[1]);
-  
-    // fibSpiralDrawInfo.rotationCenter = rotationCenter;
-    // fibSpiralDrawInfo.spiralRotationAngle = angle;
-    // fibSpiralDrawInfo.rayStart = rotationCenter;
-    // fibSpiralDrawInfo.rayEnd = fibSpiralDrawInfo.rayStart + CFPoint{ rayLength, 0.0 };
-    // fibSpiralDrawInfo.numArs = 11;
-    // fibSpiralDrawInfo.arcCenters = circleCenters;
-    // fibSpiralDrawInfo.arcRadiuses = arcRadiuses;
-    // fibSpiralDrawInfo.arcAngles = arcAngles;
-    
-    
-    const rotationCenter = p1;
-    const spiralRotationAngle: number = 0;
-    const numArs: number = 11;
-    const arcCenters: ViewPoint[] = [];
-    const arcRadiuses: number[] = [];
-    const arcAngles: number[] = [];
-    // TODO: implement extending line logic
-    const rayStart = p1;
-    const rayEnd = p2;
+
+      rayStart = (this._p1.x, this._p1.y);
+      rayEnd = (this._p2.x, this._p2.y);
+      //rayEnd = rotationCenter.add(new Vector2D(rayLength, 0.0));
+    }
 
     return {
-      rotationCenter,
+      rotationCenter: spiralRotationCenter,
       spiralRotationAngle,
-      numArs,
+      numArcs,
       arcCenters,
       arcRadiuses,
       arcAngles,
@@ -325,14 +323,13 @@ interface Point {
 	price: number;
 }
 
-
 export interface FibSpiralRenderInfo {
   rotationCenter: ViewPoint;
   spiralRotationAngle: number;
-  numArs: number;
+  numArcs: number;
   arcCenters: ViewPoint[];
   arcRadiuses: number[];
-  arcAngles: Record<number, number>;
+  arcAngles: number[][];
   rayStart: ViewPoint;
   rayEnd: ViewPoint;
 }
