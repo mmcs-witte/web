@@ -1,22 +1,22 @@
 <script setup lang="ts">
   import Chart from './components/Chart.vue'
-  import Header from './components/Header.vue'
+  import WitteHeader from './components/WitteHeader.vue'
 </script>
 
 <template>
   <div class="flex flex-col h-full space-y-2">
-    <Header />
+    <WitteHeader />
     <main class="flex flex-row w-full grow space-x-2">
-      <aside class="flex-none basis-16 flex flex-col h-full items-center justify-between rounded-md bg-gray-800">
-        <nav class="flex flex-col w-full space-y-2 p-1">
-          <div class="bg-sky-900 rounded-md border border-sky-800 p-4">
-            <FontAwesomeIcon :icon="['fas', 'palette']" />
+      <aside class="flex-none basis-16 flex flex-col h-full items-center justify-between rounded-md bg-gray-800 py-2">
+        <nav class="flex flex-col w-full space-y-2 px-1">
+          <div class="hover:bg-gray-700 aspect-square rounded-md p-2 flex items-center justify-around duration-100 ease-linear">
+            <FontAwesomeIcon :icon="['fas', 'palette']" size="2x" />
           </div>
-          <div class="bg-sky-900 rounded-md border border-sky-800 p-4">
-            <FontAwesomeIcon :icon="['fas', 'palette']" />
+          <div class="hover:bg-gray-700 aspect-square rounded-md p-2 flex items-center justify-around duration-100 ease-linear">
+            <FontAwesomeIcon :icon="['fas', 'ruler']" size="2x" />
           </div>
         </nav>
-        <div class="text-sm text-gray-200 pb-2">
+        <div class="text-sm text-gray-200">
           <span class="p-2">v0.1.0</span>
         </div>
       </aside>
