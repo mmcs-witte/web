@@ -24,3 +24,6 @@ dist-ssr
 *.sw?
 
 package-lock.json
+dist
+public/assets
+public/index.html
