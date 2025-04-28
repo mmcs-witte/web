@@ -28,7 +28,47 @@ class TrianglePaneRenderer implements IPrimitivePaneRenderer {
 		this._fillColor = fillColor;
 	}
 
-	draw(target: CanvasRenderingTarget2D) {
+	// draw(target: CanvasRenderingTarget2D) {
+	// 	target.useBitmapCoordinateSpace(scope => {
+	// 		if (this._points.length < 2) {
+	// 			return;
+	// 		}
+			
+  //     const ctx = scope.context;
+
+  //     const calculateDrawingPoint = (point: ViewPoint): ViewPoint =>  {
+  //       return { 
+  //         x : Math.round(point.x * scope.horizontalPixelRatio),
+  //         y : Math.round(point.y * scope.verticalPixelRatio)
+  //       };
+  //     };
+
+  //     const drawingPoint1 : ViewPoint = calculateDrawingPoint(this._points[0]);
+  //     const drawingPoint2 : ViewPoint = calculateDrawingPoint(this._points[1]);
+  //     const drawingPoint3 : ViewPoint = this._points.length > 2 ? 
+  //       calculateDrawingPoint(this._points[2]) :
+  //       drawingPoint2;
+
+	// 		if (this._points.length < 3)
+	// 		{
+	// 			ctx.beginPath();
+	// 			ctx.moveTo(drawingPoint1.x, drawingPoint1.y);
+  //       ctx.lineTo(drawingPoint2.x, drawingPoint2.y);
+  //       ctx.strokeStyle = this._fillColor;
+  //       ctx.lineWidth = scope.verticalPixelRatio;
+	// 			ctx.stroke();
+	// 		}
+	// 		else {
+  //       ctx.fillStyle = this._fillColor;
+	// 			ctx.beginPath();
+	// 			ctx.moveTo(drawingPoint1.x, drawingPoint1.y);
+  //       ctx.lineTo(drawingPoint2.x, drawingPoint2.y);
+  //       ctx.lineTo(drawingPoint3.x, drawingPoint3.y);
+	// 			ctx.fill();
+	// 		}
+	// 	});
+	// }
+  draw(target: CanvasRenderingTarget2D) {
 		target.useBitmapCoordinateSpace(scope => {
 			if (this._points.length < 2) {
 				return;
@@ -49,22 +89,54 @@ class TrianglePaneRenderer implements IPrimitivePaneRenderer {
         calculateDrawingPoint(this._points[2]) :
         drawingPoint2;
 
-			if (this._points.length < 3)
-			{
+			const high = Math.min(drawingPoint1.y, drawingPoint2.y);
+			const low = Math.max(drawingPoint1.y, drawingPoint2.y);
+			const height = low - high;
+
+			ctx.font = '36px Arial';
+
+      const fibonacciLevels = [0, 0.236, 0.382, 0.5, 0.618, 0.786, 1];
+      const fibonacciLineColors = ['rgba(234, 53, 40, 0.93)', 'rgba(244, 244, 19, 0.94)','rgba(35, 220, 87, 0.75)',
+        'rgba(7, 227, 179, 0.75)','rgba(35, 186, 220, 0.75)','rgba(149, 35, 220, 0.75)'];
+
+      const oldGlobalAlpha = ctx.globalAlpha;
+      ctx.globalAlpha = 0.25;
+
+      for (let i: number = 0; i < fibonacciLevels.length; i++) {
+        // TODO: filling background first
+        const currIndex = i;
+        const nextIndex = currIndex + 1 < fibonacciLevels.length ? currIndex + 1 : currIndex;
+        const curLevel: number = fibonacciLevels[currIndex];
+        const nextLevel: number = fibonacciLevels[nextIndex];
+        if (currIndex != nextIndex) {
+          ctx.fillStyle = fibonacciLineColors[nextIndex % fibonacciLineColors.length];
+          const currY = low - height * curLevel;
+          const nextY = low - height * nextLevel;
+
+          ctx.beginPath();
+          ctx.moveTo(drawingPoint1.x, currY);
+          ctx.lineTo(drawingPoint2.x, currY);
+          ctx.lineTo(drawingPoint2.x, nextY);
+          ctx.lineTo(drawingPoint1.x, nextY);
+          ctx.fill();
+        }
+      }
+
+      ctx.globalAlpha = oldGlobalAlpha;
+			ctx.fillStyle = 'rgba(39, 16, 241, 0.93)';
+
+      for (let i: number = 0; i < fibonacciLevels.length; i++) {
+        ctx.strokeStyle = fibonacciLineColors[i % fibonacciLineColors.length];
+        ctx.fillStyle = fibonacciLineColors[i % fibonacciLineColors.length];
+        ctx.lineWidth = 5;
+
+        const level = fibonacciLevels[i];
+        const y = low - height * level;
 				ctx.beginPath();
-				ctx.moveTo(drawingPoint1.x, drawingPoint1.y);
-        ctx.lineTo(drawingPoint2.x, drawingPoint2.y);
-        ctx.strokeStyle = this._fillColor;
-        ctx.lineWidth = scope.verticalPixelRatio;
+				ctx.moveTo(drawingPoint1.x, y);
+				ctx.lineTo(drawingPoint2.x, y);
 				ctx.stroke();
-			}
-			else {
-        ctx.fillStyle = this._fillColor;
-				ctx.beginPath();
-				ctx.moveTo(drawingPoint1.x, drawingPoint1.y);
-        ctx.lineTo(drawingPoint2.x, drawingPoint2.y);
-        ctx.lineTo(drawingPoint3.x, drawingPoint3.y);
-				ctx.fill();
+				ctx.fillText(`${(level * 100).toFixed(1)}%`, (drawingPoint2.x + 4), (y - 2));
 			}
 		});
 	}
@@ -281,9 +353,9 @@ export interface TriangleDrawingToolOptions {
 }
 
 const defaultOptions: TriangleDrawingToolOptions = {
-	fillColor: 'rgba(35, 220, 87, 0.75)',
-	previewFillColor: 'rgba(57, 200, 50, 0.11)',
-	labelColor: 'rgb(214, 106, 49)',
+	fillColor: 'rgb(234, 116, 19)',
+	previewFillColor: 'rgba(246, 87, 43, 0.11)',
+	labelColor: 'rgb(2, 2, 2)',
 	labelTextColor: 'white',
 	showLabels: true,
 	priceLabelFormatter: (price: number) => price.toFixed(3), // => price.toFixed(2),
@@ -411,24 +483,19 @@ class PreviewTriangle extends Triangle {
 export class TriangleDrawingTool {
 	private _chart: IChartApi | undefined;
 	private _series: ISeriesApi<SeriesType> | undefined;
-	private _drawingsToolbarContainer: HTMLDivElement | undefined;
 	private _defaultOptions: Partial<TriangleDrawingToolOptions>;
 	private _triangles: Triangle[];
 	private _previewTriangle: PreviewTriangle | undefined = undefined;
 	private _points: Point[] = [];
 	private _drawing: boolean = false;
-	private _toolbarButton: HTMLDivElement | undefined;
 
 	constructor(
 		chart: IChartApi,
 		series: ISeriesApi<SeriesType>,
-		drawingsToolbarContainer: HTMLDivElement,
 		options: Partial<TriangleDrawingToolOptions>
 	) {
 		this._chart = chart;
 		this._series = series;
-		this._drawingsToolbarContainer = drawingsToolbarContainer;
-		this._addToolbarButton();
 		this._defaultOptions = options;
 		this._triangles = [];
 		this._chart.subscribeClick(this._clickHandler);
@@ -451,23 +518,16 @@ export class TriangleDrawingTool {
 		this._removePreviewTriangle();
 		this._chart = undefined;
 		this._series = undefined;
-		this._drawingsToolbarContainer = undefined;
 	}
 
 	startDrawing(): void {
 		this._drawing = true;
 		this._points = [];
-		if (this._toolbarButton) {
-			this._toolbarButton.style.fill = 'rgb(100, 150, 250)';
-		}
 	}
 
 	stopDrawing(): void {
 		this._drawing = false;
 		this._points = [];
-		if (this._toolbarButton) {
-			this._toolbarButton.style.fill = 'rgb(0, 0, 0)';
-		}
 	}
 
 	isDrawing(): boolean {
@@ -540,37 +600,5 @@ export class TriangleDrawingTool {
 			ensureDefined(this._series).detachPrimitive(this._previewTriangle);
 			this._previewTriangle = undefined;
 		}
-	}
-
-	private _addToolbarButton() {
-		if (!this._drawingsToolbarContainer) return;
-		const button = document.createElement('div');
-		button.style.width = '20px';
-		button.style.height = '20px';
-		button.innerHTML = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512"><path d="M315.4 15.5C309.7 5.9 299.2 0 288 0s-21.7 5.9-27.4 15.5l-96 160c-5.9 9.9-6.1 22.2-.4 32.2s16.3 16.2 27.8 16.2H384c11.5 0 22.2-6.2 27.8-16.2s5.5-22.3-.4-32.2l-96-160zM288 312V456c0 22.1 17.9 40 40 40H472c22.1 0 40-17.9 40-40V312c0-22.1-17.9-40-40-40H328c-22.1 0-40 17.9-40 40zM128 512a128 128 0 1 0 0-256 128 128 0 1 0 0 256z"/></svg>`;
-		button.addEventListener('click', () => {
-			if (this.isDrawing()) {
-				this.stopDrawing();
-			} else {
-				this.startDrawing();
-			}
-		});
-		this._drawingsToolbarContainer.appendChild(button);
-		this._toolbarButton = button;
-		const colorPicker = document.createElement('input');
-		colorPicker.type = 'color';
-		colorPicker.value = '#C83264';
-		colorPicker.style.width = '24px';
-		colorPicker.style.height = '20px';
-		colorPicker.style.border = 'none';
-		colorPicker.style.padding = '0px';
-		colorPicker.style.backgroundColor = 'transparent';
-		colorPicker.addEventListener('change', () => {
-			const newColor = colorPicker.value;
-			this._defaultOptions.fillColor = newColor + 'CC';
-			this._defaultOptions.previewFillColor = newColor + '77';
-			this._defaultOptions.labelColor = newColor;
-		});
-		this._drawingsToolbarContainer.appendChild(colorPicker);
 	}
 }

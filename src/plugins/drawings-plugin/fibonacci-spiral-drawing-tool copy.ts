@@ -2,7 +2,6 @@ import { CanvasRenderingTarget2D } from 'fancy-canvas';
 import type {
 	Coordinate,
 	IChartApi,
-	isBusinessDay,
 	ISeriesApi,
 	ISeriesPrimitiveAxisView,
 	IPrimitivePaneRenderer,
@@ -12,6 +11,11 @@ import type {
 	SeriesType,
 	Time,
 } from 'lightweight-charts';
+
+import {
+	isBusinessDay
+} from 'lightweight-charts';
+
 import { ensureDefined } from '../../helpers/assertions.ts';
 import { PluginBase } from '../plugin-base.ts';
 import { positionsBox } from '../../helpers/dimensions/positions.ts';
@@ -26,36 +30,79 @@ class RectanglePaneRenderer implements IPrimitivePaneRenderer {
 		this._p2 = p2;
 		this._fillColor = fillColor;
 	}
+  
+  draw(target: CanvasRenderingTarget2D) {
+    target.useBitmapCoordinateSpace(scope => {
+		  if (
+		  	this._p1.x === null ||
+		  	this._p1.y === null ||
+		  	this._p2.x === null ||
+		  	this._p2.y === null
+		  )
+		  	return;
+      
+      const ctx = scope.context;
 
-	draw(target: CanvasRenderingTarget2D) {
-		target.useBitmapCoordinateSpace(scope => {
-			if (
-				this._p1.x === null ||
-				this._p1.y === null ||
-				this._p2.x === null ||
-				this._p2.y === null
-			)
-				return;
-			const ctx = scope.context;
-			const horizontalPositions = positionsBox(
-				this._p1.x,
-				this._p2.x,
-				scope.horizontalPixelRatio
-			);
-			const verticalPositions = positionsBox(
-				this._p1.y,
-				this._p2.y,
-				scope.verticalPixelRatio
-			);
-			ctx.fillStyle = this._fillColor;
-			ctx.fillRect(
-				horizontalPositions.position,
-				verticalPositions.position,
-				horizontalPositions.length,
-				verticalPositions.length
-			);
-		});
-	}
+      const calculateDrawingPoint = (point: ViewPoint): ViewPoint =>  {
+        return { 
+          x : Math.round(point.x * scope.horizontalPixelRatio),
+          y : Math.round(point.y * scope.verticalPixelRatio)
+        };
+      };
+
+      const drawingPoint1 : ViewPoint = calculateDrawingPoint({x: this._p1.x, y: this._p1.y});
+      const drawingPoint2 : ViewPoint = calculateDrawingPoint({x: this._p2.x, y: this._p2.y});
+
+      const high = Math.min(drawingPoint1.y, drawingPoint2.y);
+      const low = Math.max(drawingPoint1.y, drawingPoint2.y);
+      const height = low - high;
+
+      ctx.font = '36px Arial';
+
+      const fibonacciLevels = [0, 0.236, 0.382, 0.5, 0.618, 0.786, 1];
+      const fibonacciLineColors = ['rgba(234, 53, 40, 0.93)', 'rgba(244, 244, 19, 0.94)','rgba(35, 220, 87, 0.75)',
+        'rgba(7, 227, 179, 0.75)','rgba(35, 186, 220, 0.75)','rgba(149, 35, 220, 0.75)'];
+
+      const oldGlobalAlpha = ctx.globalAlpha;
+      ctx.globalAlpha = 0.25;
+
+      //  filling background first
+      for (let i: number = 0; i < fibonacciLevels.length; i++) {
+        const currIndex = i;
+        const nextIndex = currIndex + 1 < fibonacciLevels.length ? currIndex + 1 : currIndex;
+        const curLevel: number = fibonacciLevels[currIndex];
+        const nextLevel: number = fibonacciLevels[nextIndex];
+        if (currIndex != nextIndex) {
+          ctx.fillStyle = fibonacciLineColors[nextIndex % fibonacciLineColors.length];
+          const currY = low - height * curLevel;
+          const nextY = low - height * nextLevel;
+
+          ctx.beginPath();
+          ctx.moveTo(drawingPoint1.x, currY);
+          ctx.lineTo(drawingPoint2.x, currY);
+          ctx.lineTo(drawingPoint2.x, nextY);
+          ctx.lineTo(drawingPoint1.x, nextY);
+          ctx.fill();
+        }
+      }
+
+      ctx.globalAlpha = oldGlobalAlpha;
+
+      for (let i: number = 0; i < fibonacciLevels.length; i++) {
+        ctx.strokeStyle = fibonacciLineColors[i % fibonacciLineColors.length];
+        ctx.fillStyle = fibonacciLineColors[i % fibonacciLineColors.length];
+        ctx.lineWidth = 5;
+
+        const level = fibonacciLevels[i];
+        const y = low - height * level;
+        ctx.beginPath();
+        ctx.moveTo(drawingPoint1.x, y);
+        ctx.lineTo(drawingPoint2.x, y);
+        ctx.stroke();
+        ctx.fillText(`${(level * 100).toFixed(1)}%`, (drawingPoint2.x + 4), (y - 2));
+      }
+    });
+  }
 }
 
 interface ViewPoint {
@@ -63,12 +110,12 @@ interface ViewPoint {
 	y: Coordinate | null;
 }
 
-class RectanglePaneView implements IPrimitivePaneView {
-	_source: Rectangle;
+class FibSpiralPaneView implements IPrimitivePaneView {
+	_source: FibSpiral;
 	_p1: ViewPoint = { x: null, y: null };
 	_p2: ViewPoint = { x: null, y: null };
 
-	constructor(source: Rectangle) {
+	constructor(source: FibSpiral) {
 		this._source = source;
 	}
 
@@ -131,12 +178,12 @@ class RectangleAxisPaneRenderer implements IPrimitivePaneRenderer {
 }
 
 abstract class RectangleAxisPaneView implements IPrimitivePaneView {
-	_source: Rectangle;
+	_source: FibSpiral;
 	_p1: number | null = null;
 	_p2: number | null = null;
 	_vertical: boolean = false;
 
-	constructor(source: Rectangle, vertical: boolean) {
+	constructor(source: FibSpiral, vertical: boolean) {
 		this._source = source;
 		this._vertical = vertical;
 	}
@@ -179,10 +226,10 @@ class RectangleTimeAxisPaneView extends RectangleAxisPaneView {
 }
 
 abstract class RectangleAxisView implements ISeriesPrimitiveAxisView {
-	_source: Rectangle;
+	_source: FibSpiral;
 	_p: Point;
 	_pos: Coordinate | null = null;
-	constructor(source: Rectangle, p: Point) {
+	constructor(source: FibSpiral, p: Point) {
 		this._source = source;
 		this._p = p;
 	}
@@ -238,7 +285,7 @@ interface Point {
 	price: number;
 }
 
-export interface RectangleDrawingToolOptions {
+export interface FibSpiralDrawingToolOptions {
 	fillColor: string;
 	previewFillColor: string;
 	labelColor: string;
@@ -248,7 +295,7 @@ export interface RectangleDrawingToolOptions {
 	timeLabelFormatter: (time: Time) => string;
 }
 
-const defaultOptions: RectangleDrawingToolOptions = {
+const defaultOptions: FibSpiralDrawingToolOptions = {
 	fillColor: 'rgba(200, 50, 100, 0.75)',
 	previewFillColor: 'rgba(200, 50, 100, 0.25)',
 	labelColor: 'rgba(200, 50, 100, 1)',
@@ -264,11 +311,11 @@ const defaultOptions: RectangleDrawingToolOptions = {
 	},
 };
 
-class Rectangle extends PluginBase {
-	_options: RectangleDrawingToolOptions;
+class FibSpiral extends PluginBase {
+	_options: FibSpiralDrawingToolOptions;
 	_p1: Point;
 	_p2: Point;
-	_paneViews: RectanglePaneView[];
+	_paneViews: FibSpiralPaneView[];
 	_timeAxisViews: RectangleTimeAxisView[];
 	_priceAxisViews: RectanglePriceAxisView[];
 	_priceAxisPaneViews: RectanglePriceAxisPaneView[];
@@ -277,7 +324,7 @@ class Rectangle extends PluginBase {
 	constructor(
 		p1: Point,
 		p2: Point,
-		options: Partial<RectangleDrawingToolOptions> = {}
+		options: Partial<FibSpiralDrawingToolOptions> = {}
 	) {
 		super();
 		this._p1 = p1;
@@ -286,7 +333,7 @@ class Rectangle extends PluginBase {
 			...defaultOptions,
 			...options,
 		};
-		this._paneViews = [new RectanglePaneView(this)];
+		this._paneViews = [new FibSpiralPaneView(this)];
 		this._timeAxisViews = [
 			new RectangleTimeAxisView(this, p1),
 			new RectangleTimeAxisView(this, p2),
@@ -327,17 +374,17 @@ class Rectangle extends PluginBase {
 		return this._timeAxisPaneViews;
 	}
 
-	applyOptions(options: Partial<RectangleDrawingToolOptions>) {
+	applyOptions(options: Partial<FibSpiralDrawingToolOptions>) {
 		this._options = { ...this._options, ...options };
 		this.requestUpdate();
 	}
 }
 
-class PreviewRectangle extends Rectangle {
+class PreviewFibSpiral extends FibSpiral {
 	constructor(
 		p1: Point,
 		p2: Point,
-		options: Partial<RectangleDrawingToolOptions> = {}
+		options: Partial<FibSpiralDrawingToolOptions> = {}
 	) {
 		super(p1, p2, options);
 		this._options.fillColor = this._options.previewFillColor;
@@ -352,34 +399,26 @@ class PreviewRectangle extends Rectangle {
 	}
 }
 
-export class RectangleDrawingTool {
+export class FibSpiralDrawingTool {
 	private _chart: IChartApi | undefined;
 	private _series: ISeriesApi<SeriesType> | undefined;
-	private _drawingsToolbarContainer: HTMLDivElement | undefined;
-	private _defaultOptions: Partial<RectangleDrawingToolOptions>;
-	private _rectangles: Rectangle[];
-	private _previewRectangle: PreviewRectangle | undefined = undefined;
+	private _defaultOptions: Partial<FibSpiralDrawingToolOptions>;
+	private _drawings: FibSpiral[];
+	private _previewDrawing: PreviewFibSpiral | undefined = undefined;
 	private _points: Point[] = [];
 	private _drawing: boolean = false;
-	private _toolbarButton: HTMLDivElement | undefined;
 
 	constructor(
 		chart: IChartApi,
 		series: ISeriesApi<SeriesType>,
-		drawingsToolbarContainer: HTMLDivElement,
-		options: Partial<RectangleDrawingToolOptions>
+		options: Partial<FibSpiralDrawingToolOptions>
 	) {
 		this._chart = chart;
 		this._series = series;
-		this._drawingsToolbarContainer = drawingsToolbarContainer;
-		this._addToolbarButton();
 		this._defaultOptions = options;
-		this._rectangles = [];
+		this._drawings = [];
 		this._chart.subscribeClick(this._clickHandler);
 		this._chart.subscribeCrosshairMove(this._moveHandler);
-
-    // TODO: remove this hardcoding later
-    this.startDrawing();
 	}
 
 	private _clickHandler = (param: MouseEventParams) => this._onClick(param);
@@ -391,30 +430,23 @@ export class RectangleDrawingTool {
 			this._chart.unsubscribeClick(this._clickHandler);
 			this._chart.unsubscribeCrosshairMove(this._moveHandler);
 		}
-		this._rectangles.forEach(rectangle => {
+		this._drawings.forEach(rectangle => {
 			this._removeRectangle(rectangle);
 		});
-		this._rectangles = [];
+		this._drawings = [];
 		this._removePreviewRectangle();
 		this._chart = undefined;
 		this._series = undefined;
-		this._drawingsToolbarContainer = undefined;
 	}
 
 	startDrawing(): void {
 		this._drawing = true;
 		this._points = [];
-		if (this._toolbarButton) {
-			this._toolbarButton.style.fill = 'rgb(100, 150, 250)';
-		}
 	}
 
 	stopDrawing(): void {
 		this._drawing = false;
 		this._points = [];
-		if (this._toolbarButton) {
-			this._toolbarButton.style.fill = 'rgb(0, 0, 0)';
-		}
 	}
 
 	isDrawing(): boolean {
@@ -439,8 +471,8 @@ export class RectangleDrawingTool {
 		if (price === null) {
 			return;
 		}
-		if (this._previewRectangle) {
-			this._previewRectangle.updateEndPoint({
+		if (this._previewDrawing) {
+			this._previewDrawing.updateEndPoint({
 				time: param.time,
 				price,
 			});
@@ -460,58 +492,26 @@ export class RectangleDrawingTool {
 	}
 
 	private _addNewRectangle(p1: Point, p2: Point) {
-		const rectangle = new Rectangle(p1, p2, { ...this._defaultOptions });
-		this._rectangles.push(rectangle);
+		const rectangle = new FibSpiral(p1, p2, { ...this._defaultOptions });
+		this._drawings.push(rectangle);
 		ensureDefined(this._series).attachPrimitive(rectangle);
 	}
 
-	private _removeRectangle(rectangle: Rectangle) {
+	private _removeRectangle(rectangle: FibSpiral) {
 		ensureDefined(this._series).detachPrimitive(rectangle);
 	}
 
 	private _addPreviewRectangle(p: Point) {
-		this._previewRectangle = new PreviewRectangle(p, p, {
+		this._previewDrawing = new PreviewFibSpiral(p, p, {
 			...this._defaultOptions,
 		});
-		ensureDefined(this._series).attachPrimitive(this._previewRectangle);
+		ensureDefined(this._series).attachPrimitive(this._previewDrawing);
 	}
 
 	private _removePreviewRectangle() {
-		if (this._previewRectangle) {
-			ensureDefined(this._series).detachPrimitive(this._previewRectangle);
-			this._previewRectangle = undefined;
+		if (this._previewDrawing) {
+			ensureDefined(this._series).detachPrimitive(this._previewDrawing);
+			this._previewDrawing = undefined;
 		}
-	}
-
-	private _addToolbarButton() {
-		if (!this._drawingsToolbarContainer) return;
-		const button = document.createElement('div');
-		button.style.width = '20px';
-		button.style.height = '20px';
-		button.innerHTML = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512"><path d="M315.4 15.5C309.7 5.9 299.2 0 288 0s-21.7 5.9-27.4 15.5l-96 160c-5.9 9.9-6.1 22.2-.4 32.2s16.3 16.2 27.8 16.2H384c11.5 0 22.2-6.2 27.8-16.2s5.5-22.3-.4-32.2l-96-160zM288 312V456c0 22.1 17.9 40 40 40H472c22.1 0 40-17.9 40-40V312c0-22.1-17.9-40-40-40H328c-22.1 0-40 17.9-40 40zM128 512a128 128 0 1 0 0-256 128 128 0 1 0 0 256z"/></svg>`;
-		button.addEventListener('click', () => {
-			if (this.isDrawing()) {
-				this.stopDrawing();
-			} else {
-				this.startDrawing();
-			}
-		});
-		this._drawingsToolbarContainer.appendChild(button);
-		this._toolbarButton = button;
-		const colorPicker = document.createElement('input');
-		colorPicker.type = 'color';
-		colorPicker.value = '#C83264';
-		colorPicker.style.width = '24px';
-		colorPicker.style.height = '20px';
-		colorPicker.style.border = 'none';
-		colorPicker.style.padding = '0px';
-		colorPicker.style.backgroundColor = 'transparent';
-		colorPicker.addEventListener('change', () => {
-			const newColor = colorPicker.value;
-			this._defaultOptions.fillColor = newColor + 'CC';
-			this._defaultOptions.previewFillColor = newColor + '77';
-			this._defaultOptions.labelColor = newColor;
-		});
-		this._drawingsToolbarContainer.appendChild(colorPicker);
 	}
 }
