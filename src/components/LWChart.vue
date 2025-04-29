@@ -186,14 +186,15 @@ const addSeriesAndData = props => {
   // const bandIndicator = new BandsIndicator();
   // series.attachPrimitive(bandIndicator);
 
-  const smaIndicator = new SMAIndicator();
-  series.attachPrimitive(smaIndicator);
+  // const smaIndicator = new SMAIndicator();
+  // series.attachPrimitive(smaIndicator);
 
   //createTrendLine(chart, series, point1, point2, 10);
   //createTriangleDrawingTool(chart, series);
   //createRectangleDrawingTool(chart, series);
   //createVolumeProfile(chart, series, props.data);
   //createAnchoredText(chart, series);
+  //createFibChannelDrawingTool(chart, series);
 };
 
 onMounted(() => {
