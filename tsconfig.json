@@ -2,6 +2,12 @@
   "files": [],
   "references": [
     { "path": "./tsconfig.app.json" },
-    { "path": "./tsconfig.node.json" }
-  ]
+    { "path": "./tsconfig.node.json" },
+    { "path": "./vendor/lw-charts/tsconfig.json" }
+  ],
+  "compilerOptions": {
+    "paths": {
+      "lightweight-charts": ["./vendor/lw-charts/src"],
+    }
+  },
 }

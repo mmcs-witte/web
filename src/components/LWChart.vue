@@ -14,6 +14,14 @@ import {
 	HistogramSeries,
 	BaselineSeries,
 } from 'lightweight-charts';
+import { AnchoredText } from "../plugins/anchored-text/anchored-text.ts";
+import { TrendLine } from '../plugins/drawings-plugin/trend-line.ts';
+import { RectangleDrawingTool } from '../plugins/drawings-plugin/rectangle-drawing-tool.ts';
+import { TriangleDrawingTool } from '../plugins/drawings-plugin/triangle-drawing-tool.ts';
+import { FibChannelDrawingTool } from '../plugins/drawings-plugin/fibonacci-channel-drawing-tool.ts';
+import { VolumeProfile } from '../plugins/volume-profile/volume-profile.ts';
+import { BandsIndicator } from '../plugins/indicators-plugin/bands-indicator.ts'
+import { SMAIndicator } from '../plugins/indicators-plugin/simple-moving-average-indicator.ts'
 
 const props = defineProps({
 	type: {
@@ -85,11 +93,108 @@ const resizeHandler = () => {
 	chart.resize(dimensions.width, dimensions.height);
 };
 
+const createTrendLine = (chart, series, point1, point2, width) => {
+  const trendLine = new TrendLine(chart, series, point1, point2, {
+    lineColor: 'red',
+	  width: 10,
+	  showLabels: true,
+	  labelBackgroundColor: 'blue',
+	  labelTextColor: 'orange',
+	});
+  series.attachPrimitive(trendLine);
+};
+
+const createRectangleDrawingTool = (chart, series, ) => {
+  const rectDrawing = new RectangleDrawingTool(chart, series, 
+	  null,
+    null
+  );
+  series.attachPrimitive(rectDrawing);
+  rectDrawing.startDrawing();
+};
+
+const createFibChannelDrawingTool = (chart, series, ) => {
+  const fibChannelDrawing = new FibChannelDrawingTool(chart, series, 
+	  null,
+    null
+  );
+  series.attachPrimitive(fibChannelDrawing);
+  fibChannelDrawing.startDrawing();
+};
+
+const createTriangleDrawingTool = (chart, series) => {
+  const triangle = new TriangleDrawingTool(
+	  chart,
+	  series,
+	  null,
+	  {
+	  	showLabels: false,
+	  }
+  );
+  series.attachPrimitive(triangle);
+  triangle.startDrawing();
+};
+
+const createVolumeProfile = (chart, series, data) => {
+  const basePrice = data[data.length - 50].value;
+  const priceStep = Math.round(basePrice * 0.1);
+  const profile = [];
+  for (let i = 0; i < 15; i++) {
+  	profile.push({
+  		price: basePrice + i * priceStep,
+  		vol: Math.round(Math.random() * 20),
+  	});
+  }
+  const vpData = {
+  	time: data[data.length - 150].time,
+  	profile,
+  	width: 100, // number of bars width
+  };
+  const vp = new VolumeProfile(chart, series, vpData);
+  series.attachPrimitive(vp);
+};
+
+const createAnchoredText = (chart, series) => {
+  const anchoredText = new AnchoredText({
+       vertAlign: 'middle',
+       horzAlign: 'middle',
+       text: 'Witte',
+       lineHeight: 54,
+       font: 'bold 54px Arial',
+       color: 'white',
+     });
+  series.attachPrimitive(anchoredText); 
+};
+
+
 // Creates the chart series and sets the data.
 const addSeriesAndData = props => {
 	const seriesDefinition = getChartSeriesDefinition(props.type);
 	series = chart.addSeries(seriesDefinition, props.seriesOptions);
 	series.setData(props.data);
+
+  const dataLength = props.data.length;
+  const point1 = {
+  	time: props.data[dataLength - 50].time,
+  	price: props.data[dataLength - 50].value * 0.9,
+  };
+  const point2 = {
+  	time: props.data[dataLength - 5].time,
+  	price: props.data[dataLength - 5].value * 1.10,
+  };
+
+  // const bandIndicator = new BandsIndicator();
+  // series.attachPrimitive(bandIndicator);
+
+  // const smaIndicator = new SMAIndicator();
+  // series.attachPrimitive(smaIndicator);
+
+  //createTrendLine(chart, series, point1, point2, 10);
+  //createTriangleDrawingTool(chart, series);
+  //createRectangleDrawingTool(chart, series);
+  //createVolumeProfile(chart, series, props.data);
+  //createAnchoredText(chart, series);
+  //createFibChannelDrawingTool(chart, series);
 };
 
 onMounted(() => {
@@ -104,6 +209,12 @@ onMounted(() => {
 	if (props.timeScaleOptions) {
 		chart.timeScale().applyOptions(props.timeScaleOptions);
 	}
+
+  // chart.applyOptions({
+	// 		crosshair: {
+	// 			mode: CrosshairMode.Normal,
+	// 		},
+	// 	})
 
 	chart.timeScale().fitContent(); 
 
