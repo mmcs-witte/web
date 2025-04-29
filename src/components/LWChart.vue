@@ -23,6 +23,8 @@ import { FibChannelDrawingTool } from '../plugins/drawings-plugin/fibonacci-chan
 import { VolumeProfile } from '../plugins/volume-profile/volume-profile.ts';
 import { useDrawingsStore } from '../stores/drawings.ts';
 import { DrawingType } from '../types/drawings.ts';
+import { BandsIndicator } from '../plugins/indicators-plugin/bands-indicator.ts'
+import { SMAIndicator } from '../plugins/indicators-plugin/simple-moving-average-indicator.ts'
 
 const props = defineProps({
 	type: {
@@ -201,20 +203,28 @@ const addSeriesAndData = props => {
 
   const dataLength = props.data.length;
   const point1 = {
-  	time: props.data[dataLength - 500].time,
-  	price: props.data[dataLength - 500].value * 0.9,
+  	time: props.data[dataLength - 50].time,
+  	price: props.data[dataLength - 50].value * 0.9,
   };
   const point2 = {
   	time: props.data[dataLength - 5].time,
   	price: props.data[dataLength - 5].value * 1.10,
   };
 
-  drawingTools = createDrawingTools(chart, series) 
+  drawingTools = createDrawingTools(chart, series)
+
+  // const bandIndicator = new BandsIndicator();
+  // series.attachPrimitive(bandIndicator);
+
+  // const smaIndicator = new SMAIndicator();
+  // series.attachPrimitive(smaIndicator);
+
   //createTrendLine(chart, series, point1, point2, 10);
   //createTriangleDrawingTool(chart, series);
   //createRectangleDrawingTool(chart, series);
   //createVolumeProfile(chart, series, props.data);
   //createAnchoredText(chart, series);
+  //createFibChannelDrawingTool(chart, series);
 };
 
 onMounted(() => {
