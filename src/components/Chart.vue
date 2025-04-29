@@ -199,7 +199,7 @@ const changeType = (newType=null) => {
 </script>
 
 <template>
-  <div class="chart-container rounded-md">
+  <div class="chart-container h-full rounded-md">
     <LWChart
       :type="chartType"
       :data="data"
@@ -209,13 +209,7 @@ const changeType = (newType=null) => {
       ref="lwChart"
     />
   </div>
-  <button type="button" @click="changeColors">Set Random Colors</button>
-  <button type="button" @click="changeType">Change Chart Type</button>
-  <button type="button" @click="changeData">Change Data</button>
 </template>
 
 <style scoped>
-.chart-container {
-  height: calc(100% - 3.2em);
-}
 </style>

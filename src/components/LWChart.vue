@@ -21,6 +21,8 @@ import { TriangleDrawingTool } from '../plugins/drawings-plugin/triangle-drawing
 import { FibChannelDrawingTool } from '../plugins/drawings-plugin/fibonacci-channel-drawing-tool.ts';
 
 import { VolumeProfile } from '../plugins/volume-profile/volume-profile.ts';
+import { useDrawingsStore } from '../stores/drawings.ts';
+import { DrawingType } from '../types/drawings.ts';
 
 const props = defineProps({
 	type: {
@@ -67,11 +69,15 @@ function getChartSeriesDefinition(type) {
 	return LineSeries;
 }
 
+function getDrawingTool(type) {
+  return drawingTools[type.toLowerCase()]
+}
+
 // Lightweight Charts™ instances are stored as normal JS variables
 // If you need to use a ref then it is recommended that you use `shallowRef` instead
 let series;
 let chart;
-
+let drawingTools;
 const chartContainer = ref();
 
 const fitContent = () => {
@@ -92,10 +98,33 @@ const resizeHandler = () => {
 	chart.resize(dimensions.width, dimensions.height);
 };
 
+const drawingStore = useDrawingsStore()
+
+const createDrawingTools = (chart, series) => {
+  const drawingTools = {
+    "rectangle": new RectangleDrawingTool(chart, series),
+    "triangle": new TriangleDrawingTool(chart, series),
+    "fibonacci_channel": new FibChannelDrawingTool(chart, series)
+  }
+
+  return drawingTools
+}
+
+let selectedDrawingTool = ref(DrawingType.Arrow)
+
+drawingStore.$subscribe((mutation, store) => {
+  if (store.currentDrawing === DrawingType.Arrow) return
+  selectedDrawingTool.value = getDrawingTool(store.currentDrawing)
+  series.attachPrimitive(selectedDrawingTool.value)
+
+  selectedDrawingTool.value.startDrawing()
+  drawingStore.currentDrawing = DrawingType.Arrow
+})
+
 const createTrendLine = (chart, series, point1, point2, width) => {
   const trendLine = new TrendLine(chart, series, point1, point2, {
     lineColor: 'red',
-	  width: 10,
+	  width: width,
 	  showLabels: true,
 	  labelBackgroundColor: 'blue',
 	  labelTextColor: 'orange',
@@ -105,8 +134,6 @@ const createTrendLine = (chart, series, point1, point2, width) => {
 
 const createRectangleDrawingTool = (chart, series, ) => {
   const rectDrawing = new RectangleDrawingTool(chart, series, 
-	  null,
-    null
   );
   series.attachPrimitive(rectDrawing);
   rectDrawing.startDrawing();
@@ -174,17 +201,18 @@ const addSeriesAndData = props => {
 
   const dataLength = props.data.length;
   const point1 = {
-  	time: props.data[dataLength - 50].time,
-  	price: props.data[dataLength - 50].value * 0.9,
+  	time: props.data[dataLength - 500].time,
+  	price: props.data[dataLength - 500].value * 0.9,
   };
   const point2 = {
   	time: props.data[dataLength - 5].time,
   	price: props.data[dataLength - 5].value * 1.10,
   };
 
+  drawingTools = createDrawingTools(chart, series) 
   //createTrendLine(chart, series, point1, point2, 10);
   //createTriangleDrawingTool(chart, series);
-  createRectangleDrawingTool(chart, series);
+  //createRectangleDrawingTool(chart, series);
   //createVolumeProfile(chart, series, props.data);
   //createAnchoredText(chart, series);
 };

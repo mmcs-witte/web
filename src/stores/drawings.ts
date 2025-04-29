@@ -3,12 +3,13 @@ import { ref } from 'vue';
 import { DrawingType } from "@/types/drawings";
 
 export const useDrawingsStore = defineStore("drawings", () => {
-  const currentDrawing = ref('')
-  function draw(name: DrawingType) {
-    currentDrawing.value = name
+  const currentDrawing = ref(DrawingType.Arrow)
+
+  function resetCurrentDrawing() {
+    currentDrawing.value = DrawingType.Arrow
   }
 
-  return { currentDrawing, draw }
+  return { currentDrawing, resetCurrentDrawing }
 })
 
 
