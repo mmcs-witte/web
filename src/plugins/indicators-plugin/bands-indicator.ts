@@ -37,27 +37,34 @@ class BandsIndicatorPaneRenderer implements IPrimitivePaneRenderer {
 			const ctx = scope.context;
 			ctx.scale(scope.horizontalPixelRatio, scope.verticalPixelRatio);
 
-			ctx.strokeStyle = this._viewData.options.lineColor;
 			ctx.lineWidth = this._viewData.options.lineWidth;
 			ctx.beginPath();
 			const region = new Path2D();
-			const lines = new Path2D();
+			const linesUp = new Path2D();
+			const linesDown = new Path2D();
 			region.moveTo(points[0].x, points[0].upper);
-			lines.moveTo(points[0].x, points[0].upper);
+			linesUp.moveTo(points[0].x, points[0].upper);
 			for (const point of points) {
 				region.lineTo(point.x, point.upper);
-				lines.lineTo(point.x, point.upper);
+				linesUp.lineTo(point.x, point.upper);
 			}
 			const end = points.length - 1;
 			region.lineTo(points[end].x, points[end].lower);
-			lines.moveTo(points[end].x, points[end].lower);
+			linesDown.moveTo(points[end].x, points[end].lower);
 			for (let i = points.length - 2; i >= 0; i--) {
 				region.lineTo(points[i].x, points[i].lower);
-				lines.lineTo(points[i].x, points[i].lower);
+				linesDown.lineTo(points[i].x, points[i].lower);
 			}
 			region.lineTo(points[0].x, points[0].upper);
 			region.closePath();
-			ctx.stroke(lines);
+			
+      // drawing up lines
+      ctx.strokeStyle = this._viewData.options.lineUpColor;
+      ctx.stroke(linesUp);
+
+			// drawing down lines
+      ctx.strokeStyle = this._viewData.options.lineDownColor;
+      ctx.stroke(linesDown);
 			ctx.fillStyle = this._viewData.options.fillColor;
 			ctx.fill(region);
 		});
@@ -113,14 +120,16 @@ function extractPrice(
 }
 
 export interface BandsIndicatorOptions {
-	lineColor?: string;
+	lineUpColor?: string;
+	lineDownColor?: string;
 	fillColor?: string;
 	lineWidth?: number;
 }
 
 const defaults: Required<BandsIndicatorOptions> = {
-	lineColor: 'rgb(25, 200, 100)',
-	fillColor: 'rgba(25, 200, 100, 0.25)',
+  lineUpColor:'rgb(200, 25, 25)',
+	lineDownColor: 'rgb(25, 200, 100)',
+	fillColor: 'rgba(58, 217, 223, 0.25)',
 	lineWidth: 1,
 };
 

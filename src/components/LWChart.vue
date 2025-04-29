@@ -19,8 +19,9 @@ import { TrendLine } from '../plugins/drawings-plugin/trend-line.ts';
 import { RectangleDrawingTool } from '../plugins/drawings-plugin/rectangle-drawing-tool.ts';
 import { TriangleDrawingTool } from '../plugins/drawings-plugin/triangle-drawing-tool.ts';
 import { FibChannelDrawingTool } from '../plugins/drawings-plugin/fibonacci-channel-drawing-tool.ts';
-
 import { VolumeProfile } from '../plugins/volume-profile/volume-profile.ts';
+import { BandsIndicator } from '../plugins/indicators-plugin/bands-indicator.ts'
+import { SMAIndicator } from '../plugins/indicators-plugin/simple-moving-average-indicator.ts'
 
 const props = defineProps({
 	type: {
@@ -182,9 +183,15 @@ const addSeriesAndData = props => {
   	price: props.data[dataLength - 5].value * 1.10,
   };
 
+  // const bandIndicator = new BandsIndicator();
+  // series.attachPrimitive(bandIndicator);
+
+  const smaIndicator = new SMAIndicator();
+  series.attachPrimitive(smaIndicator);
+
   //createTrendLine(chart, series, point1, point2, 10);
   //createTriangleDrawingTool(chart, series);
-  createRectangleDrawingTool(chart, series);
+  //createRectangleDrawingTool(chart, series);
   //createVolumeProfile(chart, series, props.data);
   //createAnchoredText(chart, series);
 };
