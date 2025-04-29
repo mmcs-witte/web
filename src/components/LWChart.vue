@@ -3,7 +3,7 @@ import {
 	ref,
 	onMounted,
 	onUnmounted,
-	watch,
+	watch
 } from 'vue';
 import {
 	createChart,
@@ -19,7 +19,10 @@ import { TrendLine } from '../plugins/drawings-plugin/trend-line.ts';
 import { RectangleDrawingTool } from '../plugins/drawings-plugin/rectangle-drawing-tool.ts';
 import { TriangleDrawingTool } from '../plugins/drawings-plugin/triangle-drawing-tool.ts';
 import { FibChannelDrawingTool } from '../plugins/drawings-plugin/fibonacci-channel-drawing-tool.ts';
+
 import { VolumeProfile } from '../plugins/volume-profile/volume-profile.ts';
+import { useDrawingsStore } from '../stores/drawings.ts';
+import { DrawingType } from '../types/drawings.ts';
 import { BandsIndicator } from '../plugins/indicators-plugin/bands-indicator.ts'
 import { SMAIndicator } from '../plugins/indicators-plugin/simple-moving-average-indicator.ts'
 
@@ -68,11 +71,15 @@ function getChartSeriesDefinition(type) {
 	return LineSeries;
 }
 
+function getDrawingTool(type) {
+  return drawingTools[type.toLowerCase()]
+}
+
 // Lightweight Charts™ instances are stored as normal JS variables
 // If you need to use a ref then it is recommended that you use `shallowRef` instead
 let series;
 let chart;
-
+let drawingTools;
 const chartContainer = ref();
 
 const fitContent = () => {
@@ -93,10 +100,33 @@ const resizeHandler = () => {
 	chart.resize(dimensions.width, dimensions.height);
 };
 
+const drawingStore = useDrawingsStore()
+
+const createDrawingTools = (chart, series) => {
+  const drawingTools = {
+    "rectangle": new RectangleDrawingTool(chart, series),
+    "triangle": new TriangleDrawingTool(chart, series),
+    "fibonacci_channel": new FibChannelDrawingTool(chart, series)
+  }
+
+  return drawingTools
+}
+
+let selectedDrawingTool = ref(DrawingType.Arrow)
+
+drawingStore.$subscribe((mutation, store) => {
+  if (store.currentDrawing === DrawingType.Arrow) return
+  selectedDrawingTool.value = getDrawingTool(store.currentDrawing)
+  series.attachPrimitive(selectedDrawingTool.value)
+
+  selectedDrawingTool.value.startDrawing()
+  drawingStore.currentDrawing = DrawingType.Arrow
+})
+
 const createTrendLine = (chart, series, point1, point2, width) => {
   const trendLine = new TrendLine(chart, series, point1, point2, {
     lineColor: 'red',
-	  width: 10,
+	  width: width,
 	  showLabels: true,
 	  labelBackgroundColor: 'blue',
 	  labelTextColor: 'orange',
@@ -106,8 +136,6 @@ const createTrendLine = (chart, series, point1, point2, width) => {
 
 const createRectangleDrawingTool = (chart, series, ) => {
   const rectDrawing = new RectangleDrawingTool(chart, series, 
-	  null,
-    null
   );
   series.attachPrimitive(rectDrawing);
   rectDrawing.startDrawing();
@@ -182,6 +210,8 @@ const addSeriesAndData = props => {
   	time: props.data[dataLength - 5].time,
   	price: props.data[dataLength - 5].value * 1.10,
   };
+
+  drawingTools = createDrawingTools(chart, series)
 
   // const bandIndicator = new BandsIndicator();
   // series.attachPrimitive(bandIndicator);

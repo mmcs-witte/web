@@ -6,15 +6,15 @@ import {
   ListboxOptions,
   ListboxOption,
 } from '@headlessui/vue'
-import { useChartStore } from '@/stores/chart'
+import { useChartStore } from '@/stores/chart.ts'
 
 const chartStore = useChartStore()
 
 const chartTypes = [
   { id: 1, name: 'Baseline', unavailable: false },
   { id: 2, name: 'Histogram', unavailable: false },
-  { id: 3, name: 'Candlestick', unavailable: true },
-  { id: 4, name: 'Bar', unavailable: true },
+  //{ id: 3, name: 'Candlestick', unavailable: true },
+  //{ id: 4, name: 'Bar', unavailable: true },
   { id: 5, name: 'Area', unavailable: false },
   { id: 6, name: 'Line', unavailable: false }
 ]
