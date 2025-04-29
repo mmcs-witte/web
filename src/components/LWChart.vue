@@ -3,7 +3,7 @@ import {
 	ref,
 	onMounted,
 	onUnmounted,
-	watch
+	watch,
 } from 'vue';
 import {
 	createChart,

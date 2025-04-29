@@ -13,6 +13,9 @@ import {
  * Select your preferred style from the imports below:
  */
 import LWChart from "./LWChart.vue";
+import { useChartStore } from "@/stores/chart";
+
+const chartStore = useChartStore();
 
 /**
  * Generates sample data for the Lightweight Charts™ example
@@ -100,8 +103,14 @@ const seriesOptions = ref({
 	lastValueVisible: true,
   
 });
-const chartType = ref('line');
+
+const chartType = ref(chartStore.currentType);
 const lwChart = ref();
+
+chartStore.$subscribe((mutation, state) => {
+  chartType.value = state.currentType
+  changeData()
+})
 
 function randomShade() {
   return Math.round(Math.random() * 255);
@@ -171,7 +180,7 @@ const changeData = () => {
   }
 };
 
-const changeType = () => {
+const changeType = (newType=null) => {
   const types = [
     'line',
     'area',
@@ -190,7 +199,7 @@ const changeType = () => {
 </script>
 
 <template>
-  <div class="chart-container">
+  <div class="chart-container rounded-md">
     <LWChart
       :type="chartType"
       :data="data"
@@ -204,6 +213,7 @@ const changeType = () => {
   <button type="button" @click="changeType">Change Chart Type</button>
   <button type="button" @click="changeData">Change Data</button>
 </template>
+
 <style scoped>
 .chart-container {
   height: calc(100% - 3.2em);
