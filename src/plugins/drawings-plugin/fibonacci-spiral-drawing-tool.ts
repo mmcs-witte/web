@@ -63,8 +63,7 @@ class FibSpiralPaneRenderer implements IPrimitivePaneRenderer {
       const ctx = scope.context;
       ctx.save();
       ctx.translate(rotationCenter.x, rotationCenter.y);
-      // TODO: make sure it is clockwise radian angle
-      ctx.rotate(spiralRotationAngle);
+      ctx.rotate(-spiralRotationAngle);
 
       ctx.beginPath();
 
@@ -120,14 +119,31 @@ class FibSpiralPaneView implements IPrimitivePaneView {
     const pointsAreValid = p1.x != null && p1.y != null && p2.x != null && p2.y != null;
     const pointAreEqual = pointsAreValid && p1.x == p2.x && p1.y == p2.y;
     
+	  /// @details Counterclockwise angle from vector lhs to vector rhs
+	  const angleBetweenVectors = (lhs: Vector2D, rhs: Vector2D) =>
+	  {
+		  const dot = lhs.x * rhs.x + lhs.y * rhs.y;			// Dot product between[x1, y1] and [x2, y2]
+		  const det = lhs.x * rhs.y - lhs.y * rhs.x;			// Determinant
+		  return Math.atan2(det, dot);						        // atan2(y, x) or atan2(sin, cos)
+	  }
+
+    const rotateVector = (vec: Vector2D, angle: number) =>
+    {
+      const px = vec.x * Math.cos(angle) - vec.y * Math.sin(angle);
+      const py = vec.x * Math.sin(angle) + vec.y * Math.cos(angle);
+      vec.x = px;
+      vec.y = py;
+      return vec;
+    }
+
     if (pointsAreValid && !pointAreEqual) {
       const p1: Vector2D = new Vector2D(this._p1.x, this._p1.y);
       const p2: Vector2D = new Vector2D(this._p2.x, this._p2.y);
 
       let initDir = p2.subtract(p1);
 
-      spiralRotationAngle = initDir.angleTo(new Vector2D(1, 0));
-      initDir = initDir.rotate(-spiralRotationAngle);
+      spiralRotationAngle = angleBetweenVectors(initDir, new Vector2D(1, 0));
+      initDir = rotateVector(initDir, spiralRotationAngle);
 
       const rotationCenter: Vector2D = p1;
       const directionPoint: Vector2D = p1.add(initDir);
@@ -146,7 +162,6 @@ class FibSpiralPaneView implements IPrimitivePaneView {
       const clockwiseCoef: number = bCounterClockwise ? 1.0 : -1.0;
       arcCenters = new Array<ViewPoint>(numArcs);
 
-      // TODO: make sure this cast works
       arcCenters[0] = {x: 0.0, y: clockwiseCoef * a};
       arcCenters[1] = {x: -a, y: clockwiseCoef * a};
       arcCenters[2] = {x: -a, y: clockwiseCoef * 0.0};
@@ -199,12 +214,10 @@ class FibSpiralPaneView implements IPrimitivePaneView {
       // CFPoint points[2] = { p0, p1 };
       // ExtendLineToSecondPoint(points);
       // auto rayLength = MathHelper::GetDistanceBetweenPoints(points[0], points[1]);
-  
-      const rayEnd_ = rotationCenter.add(initDir);
-
-      rayStart = {x: p1.x, y: p1.y};
-      rayEnd = {x: rayEnd_.x, y: rayEnd_.y};
       //rayEnd = rotationCenter.add(new Vector2D(rayLength, 0.0));
+  
+      rayStart = spiralRotationCenter;
+      rayEnd = {x: directionPoint.x, y: directionPoint.y};
     }
 
     return {
