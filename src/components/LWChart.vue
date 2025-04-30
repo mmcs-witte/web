@@ -108,8 +108,9 @@ const createDrawingTools = (chart, series) => {
   let drawingTools = {
     "rectangle": new RectangleDrawingTool(chart, series),
     "triangle": new TriangleDrawingTool(chart, series),
-    "fibonacci_channel": new CurveDrawingTool(chart, series),
-    //"fibonacci_spiral": new FibSpiralDrawingTool(chart, series),
+    "fibonacci_channel": new FibChannelDrawingTool(chart, series),
+    "fibonacci_spiral": new FibSpiralDrawingTool(chart, series),
+    "curve": new CurveDrawingTool(chart, series),
   }
 
   for (let tool in drawingTools) {
@@ -124,7 +125,6 @@ let selectedDrawingTool = ref(DrawingType.Arrow)
 drawingStore.$subscribe((mutation, store) => {
   if (store.currentDrawing === DrawingType.Arrow) return
   selectedDrawingTool.value = getDrawingTool(store.currentDrawing)
-
   selectedDrawingTool.value.startDrawing()
   drawingStore.currentDrawing = DrawingType.Arrow
 })
@@ -138,35 +138,6 @@ const createTrendLine = (chart, series, point1, point2, width) => {
 	  labelTextColor: 'orange',
 	});
   series.attachPrimitive(trendLine);
-};
-
-const createRectangleDrawingTool = (chart, series, ) => {
-  const rectDrawing = new RectangleDrawingTool(chart, series, 
-  );
-  series.attachPrimitive(rectDrawing);
-  rectDrawing.startDrawing();
-};
-
-const createFibChannelDrawingTool = (chart, series, ) => {
-  const fibChannelDrawing = new FibChannelDrawingTool(chart, series, 
-	  null,
-    null
-  );
-  series.attachPrimitive(fibChannelDrawing);
-  fibChannelDrawing.startDrawing();
-};
-
-const createTriangleDrawingTool = (chart, series) => {
-  const triangle = new TriangleDrawingTool(
-	  chart,
-	  series,
-	  null,
-	  {
-	  	showLabels: false,
-	  }
-  );
-  series.attachPrimitive(triangle);
-  triangle.startDrawing();
 };
 
 const createVolumeProfile = (chart, series, data) => {
@@ -207,22 +178,9 @@ const addSeriesAndData = props => {
 	series = chart.addSeries(seriesDefinition, props.seriesOptions);
 	series.setData(props.data);
 
-
   drawingTools = createDrawingTools(chart, series)
-
-  // const bandIndicator = new BandsIndicator();
-  // series.attachPrimitive(bandIndicator);
-
   // const smaIndicator = new SMAIndicator();
   // series.attachPrimitive(smaIndicator);
-
-  //createTrendLine(chart, series, point1, point2, 10);
-  //createTriangleDrawingTool(chart, series);
-  //createRectangleDrawingTool(chart, series);
-  //createVolumeProfile(chart, series, props.data);
-  //createAnchoredText(chart, series);
-  //createFibChannelDrawingTool(chart, series);
-  //createFibSprialDrawingTool(chart, series);
 };
 
 onMounted(() => {
