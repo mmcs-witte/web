@@ -8,4 +8,5 @@ export enum DrawingType {
   FibonacciSpiral = "FIBONACCI_SPIRAL",
   Curve = "CURVE",
   TrendLine = "TREND_LINE",
+  TimeLine = "TIME_LINE",
 }
