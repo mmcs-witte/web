@@ -36,17 +36,59 @@ class FibSpiralPaneRenderer implements IPrimitivePaneRenderer {
       if (this._fibSpiralRendeInfo.numArcs == 0)
         return;
 
-      const ctx = scope.context;
-
       const calculateDrawingPoint = (point: ViewPoint): ViewPoint =>  {
+        if (point.x == null || point.y == null) {
+          return {x: 0, y: 0};
+        }
+        
         return { 
           x : Math.round(point.x * scope.horizontalPixelRatio),
           y : Math.round(point.y * scope.verticalPixelRatio)
         };
       };
 
-      // const drawingPoint1 : ViewPoint = calculateDrawingPoint({x: this._p1.x, y: this._p1.y});
-      // const drawingPoint2 : ViewPoint = calculateDrawingPoint({x: this._p2.x, y: this._p2.y});
+      const degreesToRadian = (degrees: number) : number => {
+        return degrees / 180.0 * Math.PI;
+      }
+      
+      const rotationCenter = calculateDrawingPoint(this._fibSpiralRendeInfo.rotationCenter);
+      const spiralRotationAngle = this._fibSpiralRendeInfo.spiralRotationAngle;
+      const numArcs = this._fibSpiralRendeInfo.numArcs;
+      const arcCenters = this._fibSpiralRendeInfo.arcCenters;
+      const arcRadiuses = this._fibSpiralRendeInfo.arcRadiuses;
+      const arcAngles = this._fibSpiralRendeInfo.arcAngles;
+      const rayStart = calculateDrawingPoint(this._fibSpiralRendeInfo.rayStart);
+      const rayEnd = calculateDrawingPoint(this._fibSpiralRendeInfo.rayEnd);
+
+      const ctx = scope.context;
+      ctx.save();
+      ctx.translate(rotationCenter.x, rotationCenter.y);
+      // TODO: make sure it is clockwise radian angle
+      ctx.rotate(spiralRotationAngle);
+
+      ctx.beginPath();
+
+      ctx.moveTo(rayEnd.x - rotationCenter.x, rayEnd.y - rotationCenter.y);
+      ctx.lineTo(rayStart.x - rotationCenter.x, rayStart.y - rotationCenter.y);
+
+      // Draw arcs
+      for (let i = 0; i < numArcs; ++i) {
+          const center = calculateDrawingPoint(arcCenters[i]);
+          const centerX = center.x;
+          const centerY = center.y;
+          const radius = arcRadiuses[i];
+          const startAngle = degreesToRadian(arcAngles[i][0]);
+          const sweepAngle = degreesToRadian(arcAngles[i][1]);
+      
+          ctx.arc(centerX, centerY, 2 * radius, startAngle, startAngle + sweepAngle);
+      }
+
+      ctx.lineWidth = 5;
+      ctx.strokeStyle = this._lineColor;
+      ctx.lineJoin = 'bevel';
+      ctx.stroke();
+
+      ctx.restore(); // Restore transformation
     });
   }
 }
@@ -76,13 +118,16 @@ class FibSpiralPaneView implements IPrimitivePaneView {
     let rayEnd = {x: 0, y: 0};;
     
     const pointsAreValid = p1.x != null && p1.y != null && p2.x != null && p2.y != null;
-    if (pointsAreValid) {
+    const pointAreEqual = pointsAreValid && p1.x == p2.x && p1.y == p2.y;
+    
+    if (pointsAreValid && !pointAreEqual) {
       const p1: Vector2D = new Vector2D(this._p1.x, this._p1.y);
       const p2: Vector2D = new Vector2D(this._p2.x, this._p2.y);
 
-      const initDir = p2.subtract(p1);
+      let initDir = p2.subtract(p1);
+
       spiralRotationAngle = initDir.angleTo(new Vector2D(1, 0));
-      initDir.rotate(-spiralRotationAngle);
+      initDir = initDir.rotate(-spiralRotationAngle);
 
       const rotationCenter: Vector2D = p1;
       const directionPoint: Vector2D = p1.add(initDir);
@@ -96,21 +141,23 @@ class FibSpiralPaneView implements IPrimitivePaneView {
 
       numArcs = 11;
 
-      const clockwiseCoef: number = -1.0;
+      const bCounterClockwise: boolean = true;
+
+      const clockwiseCoef: number = bCounterClockwise ? 1.0 : -1.0;
       arcCenters = new Array<ViewPoint>(numArcs);
 
       // TODO: make sure this cast works
-      arcCenters[0] = (rotationCenter.add(new Vector2D(0.0, clockwiseCoef * a )));
-      arcCenters[1] = (rotationCenter.add(new Vector2D(-a, clockwiseCoef * a )));
-      arcCenters[2] = (rotationCenter.add(new Vector2D(-a, clockwiseCoef * 0.0 )));
-      arcCenters[3] = (rotationCenter.add(new Vector2D(a, clockwiseCoef * 0.0 )));
-      arcCenters[4] = (rotationCenter.add(new Vector2D(a, clockwiseCoef * 3.0 * a )));
-      arcCenters[5] = (rotationCenter.add(new Vector2D(-4.0 * a, clockwiseCoef * 3.0 * a )));
-      arcCenters[6] = (rotationCenter.add(new Vector2D(-4.0 * a, clockwiseCoef * -5.0 * a )));
-      arcCenters[7] = (rotationCenter.add(new Vector2D(9.0 * a, clockwiseCoef * -5.0 * a )));
-      arcCenters[8] = (rotationCenter.add(new Vector2D(9.0 * a, clockwiseCoef * 16.0 * a )));
-      arcCenters[9] = (rotationCenter.add(new Vector2D(-25.0 * a, clockwiseCoef * 16.0 * a )));
-      arcCenters[10] = (rotationCenter.add(new Vector2D(-25.0 * a, clockwiseCoef * -39.0 * a )));
+      arcCenters[0] = {x: 0.0, y: clockwiseCoef * a};
+      arcCenters[1] = {x: -a, y: clockwiseCoef * a};
+      arcCenters[2] = {x: -a, y: clockwiseCoef * 0.0};
+      arcCenters[3] = {x: a, y: clockwiseCoef * 0.0};
+      arcCenters[4] = {x: a, y: clockwiseCoef * 3.0 * a};
+      arcCenters[5] = {x: -4.0 * a, y: clockwiseCoef * 3.0 * a};
+      arcCenters[6] = {x: -4.0 * a, y: clockwiseCoef * -5.0 * a};
+      arcCenters[7] = {x: 9.0 * a, y: clockwiseCoef * -5.0 * a};
+      arcCenters[8] = {x: 9.0 * a, y: clockwiseCoef * 16.0 * a};
+      arcCenters[9] = {x: -25.0 * a, y: clockwiseCoef * 16.0 * a};
+      arcCenters[10] = {x: -25.0 * a, y: clockwiseCoef * -39.0 * a};
 
       arcRadiuses = new Array<number>(numArcs);
       arcRadiuses[0] = a;
@@ -120,17 +167,31 @@ class FibSpiralPaneView implements IPrimitivePaneView {
       }
       
       arcAngles = new Array<number[]>(numArcs);
-      arcAngles[0] = [270.0, 90.0];
-      arcAngles[1] = [0.0, 90.0];
-      arcAngles[2] = [90.0, 90.0];  
-      arcAngles[3] = [180.0, 90.0];
-      arcAngles[4] = [270.0, 90.0]; 
-      arcAngles[5] = [0.0, 90.0];
-      arcAngles[6] = [90.0, 90.0];
-      arcAngles[7] = [180.0, 90.0];
-      arcAngles[8] = [270.0, 90.0];
-      arcAngles[9] = [0.0, 90.0];
-      arcAngles[10] = [90.0, 70.0];
+      if (bCounterClockwise) {
+        arcAngles[0] = [270.0, 90.0];
+        arcAngles[1] = [0.0, 90.0];
+        arcAngles[2] = [90.0, 90.0];  
+        arcAngles[3] = [180.0, 90.0];
+        arcAngles[4] = [270.0, 90.0]; 
+        arcAngles[5] = [0.0, 90.0];
+        arcAngles[6] = [90.0, 90.0];
+        arcAngles[7] = [180.0, 90.0];
+        arcAngles[8] = [270.0, 90.0];
+        arcAngles[9] = [0.0, 90.0];
+        arcAngles[10] = [90.0, 90.0];
+      } else {
+        arcAngles[0] = [90.0, -90.0];
+        arcAngles[1] = [360.0, -90.0];
+        arcAngles[2] = [270.0, -90.0];  
+        arcAngles[3] = [180.0, -90.0];
+        arcAngles[4] = [90.0, -90.0]; 
+        arcAngles[5] = [360.0, -90.0];
+        arcAngles[6] = [270.0, -90.0];
+        arcAngles[7] = [180.0, -90.0];
+        arcAngles[8] = [90.0, -90.0];
+        arcAngles[9] = [360.0, -90.0];
+        arcAngles[10] = [270.0, -70.0];
+      }
 
       spiralRotationCenter = {x: p1.x, y: p1.y };
 
@@ -139,15 +200,16 @@ class FibSpiralPaneView implements IPrimitivePaneView {
       // ExtendLineToSecondPoint(points);
       // auto rayLength = MathHelper::GetDistanceBetweenPoints(points[0], points[1]);
   
+      const rayEnd_ = rotationCenter.add(initDir);
 
-      rayStart = (this._p1.x, this._p1.y);
-      rayEnd = (this._p2.x, this._p2.y);
+      rayStart = {x: p1.x, y: p1.y};
+      rayEnd = {x: rayEnd_.x, y: rayEnd_.y};
       //rayEnd = rotationCenter.add(new Vector2D(rayLength, 0.0));
     }
 
     return {
       rotationCenter: spiralRotationCenter,
-      spiralRotationAngle,
+      spiralRotationAngle: spiralRotationAngle,
       numArcs,
       arcCenters,
       arcRadiuses,
@@ -172,7 +234,7 @@ class FibSpiralPaneView implements IPrimitivePaneView {
 	renderer() {
 		return new FibSpiralPaneRenderer(
 			this.updateRenderInfo(this._p1, this._p2),
-			this._source._options.fillColor
+			this._source._options.lineColor
 		);
 	}
 }
@@ -236,7 +298,7 @@ abstract class RectangleAxisPaneView implements IPrimitivePaneView {
 		return new RectangleAxisPaneRenderer(
 			this._p1,
 			this._p2,
-			this._source._options.fillColor,
+			this._source._options.lineColor,
 			this._vertical
 		);
 	}
@@ -325,18 +387,18 @@ interface Point {
 
 export interface FibSpiralRenderInfo {
   rotationCenter: ViewPoint;
+  rayStart: ViewPoint;
+  rayEnd: ViewPoint;
   spiralRotationAngle: number;
   numArcs: number;
   arcCenters: ViewPoint[];
   arcRadiuses: number[];
   arcAngles: number[][];
-  rayStart: ViewPoint;
-  rayEnd: ViewPoint;
 }
 
 export interface FibSpiralDrawingToolOptions {
-	fillColor: string;
-	previewFillColor: string;
+	lineColor: string;
+	previewLineColor: string;
 	labelColor: string;
 	labelTextColor: string;
 	showLabels: boolean;
@@ -345,8 +407,8 @@ export interface FibSpiralDrawingToolOptions {
 }
 
 const defaultOptions: FibSpiralDrawingToolOptions = {
-	fillColor: 'rgba(200, 50, 100, 0.75)',
-	previewFillColor: 'rgba(200, 50, 100, 0.25)',
+	lineColor: 'rgba(238, 20, 93, 0.75)',
+	previewLineColor: 'rgba(250, 19, 96, 0.91)',
 	labelColor: 'rgba(200, 50, 100, 1)',
 	labelTextColor: 'white',
 	showLabels: true,
@@ -436,7 +498,7 @@ class PreviewFibSpiral extends FibSpiral {
 		options: Partial<FibSpiralDrawingToolOptions> = {}
 	) {
 		super(p1, p2, options);
-		this._options.fillColor = this._options.previewFillColor;
+		this._options.lineColor = this._options.previewLineColor;
 	}
 
 	public updateEndPoint(p: Point) {
