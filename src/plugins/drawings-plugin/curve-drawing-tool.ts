@@ -1,5 +1,4 @@
-import type { CanvasRenderingTarget2D } from 'fancy-canvas';
-
+import type { CanvasRenderingTarget2D, BitmapCoordinatesRenderingScope } from 'fancy-canvas';
 import {
   isBusinessDay
 } from 'lightweight-charts';
@@ -18,8 +17,87 @@ import type {
 import { ensureDefined } from '../../helpers/assertions.ts';
 import { PluginBase } from '../plugin-base.ts';
 import { positionsBox } from '../../helpers/dimensions/positions.ts';
+import { Point as Point2D } from '@flatten-js/core';
+import { Vector as Vector2D } from '@flatten-js/core';
 
-class TrianglePaneRenderer implements IPrimitivePaneRenderer {
+export interface BezierCurvesPointsInfo {
+  endPoints: Point2D[];
+  controlPoints1: Point2D[];
+  controlPoints2: Point2D[];
+};
+
+	// @details Fill cubic Bezier curve points for a curve connecting point1, point2, point3
+export function getCubicBezierCurveDrawingPoints(point1: Point2D, point2: Point2D, point3: Point2D): BezierCurvesPointsInfo
+	{
+    const p1 = new Vector2D(point1.x, point1.y);
+    const p2 = new Vector2D(point2.x, point2.y);
+    const p3 = new Vector2D(point3.x, point3.y);
+
+		const dir: Vector2D = p1.subtract(p3);
+
+		const controlPointOffset: number = 0.25;
+		const cp1 = p2.add(dir.scale(controlPointOffset, controlPointOffset));
+		const cp2 = p2.subtract(dir.scale(controlPointOffset, controlPointOffset));
+
+		const controlPoint0_0 = p1.add((cp1.subtract(p1)).scale(2.0 / 3.0, 2.0 / 3.0));
+		const controlPoint1_0 = p2.add((cp1.subtract(p2)).scale(2.0 / 3.0, 2.0 / 3.0));
+
+		const controlPoint0_1 = p2.add(cp2.subtract(p2).scale(2.0 / 3.0, 2.0 / 3.0));
+		const controlPoint1_1 = p3.add(cp2.subtract(p3).scale(2.0 / 3.0, 2.0 / 3.0));
+
+    const vectorToPoint = (v: Vector2D) => {
+      return new Point2D(v.x, v.y);
+    }
+
+		const endPoints: Point2D[] = [ vectorToPoint(p1), vectorToPoint(p2), vectorToPoint(p3) ];
+		const controlPoints1: Point2D[] = [ vectorToPoint(controlPoint0_0), vectorToPoint(controlPoint0_1)];
+		const controlPoints2: Point2D[] = [ vectorToPoint(controlPoint1_0), vectorToPoint(controlPoint1_1)];
+
+		return { endPoints, controlPoints1, controlPoints2 };
+}
+
+export function fillBezierPath(renderingScope: BitmapCoordinatesRenderingScope, bezierCurveInfo: BezierCurvesPointsInfo, fillColor: string) {
+  const ctx = renderingScope.context;
+
+  const bezierSplines: Point2D[] = Array<Point2D>(bezierCurveInfo.endPoints.length + bezierCurveInfo.controlPoints1.length + bezierCurveInfo.controlPoints2.length);
+	/// ------------------------------------------------------------------
+	/// bezierSplines array structure: 
+	/// 
+	/// [point_0, control_point_0_0, control_point_1_0, point_1, 
+	/// 		  control_point_0_1, control_point_1_1, point_2,
+	/// 		  ....
+	/// 		  control_point_0_i, control_point_1_i, point_i, 
+	/// 		  ....
+	/// 		  control_point_0_n, control_point_1_n, point_n] 
+	/// ------------------------------------------------------------------
+
+	let i = 0;
+  bezierCurveInfo.endPoints.forEach((point) => {
+		bezierSplines[i] = point;
+		i += 3;
+  });
+
+	i = 1;
+	for (let j = 0; j < bezierCurveInfo.controlPoints1.length; ++j) {
+		bezierSplines[i] = bezierCurveInfo.controlPoints1[j];
+		bezierSplines[i + 1] = bezierCurveInfo.controlPoints2[j];
+		i += 3;
+	}
+  ctx.beginPath();
+  ctx.fillStyle = fillColor;
+  
+  for (let i = 0; i + 3 < bezierSplines.length; i += 3) {
+    ctx.moveTo(bezierSplines[i].x, bezierSplines[i].y);
+    ctx.bezierCurveTo(bezierSplines[i + 1].x, bezierSplines[i + 1].y, 
+      bezierSplines[i + 2].x, bezierSplines[i + 2].y,
+      bezierSplines[i + 3].x, bezierSplines[i + 3].y);
+  }
+  ctx.lineTo(bezierSplines[0].x, bezierSplines[0].y);
+  ctx.closePath();
+  ctx.fill();
+}
+
+class CurvePaneRenderer implements IPrimitivePaneRenderer {
 	_points: ViewPoint[];
 	_fillColor: string;
 
@@ -59,12 +137,12 @@ class TrianglePaneRenderer implements IPrimitivePaneRenderer {
 				ctx.stroke();
 			}
 			else {
-        ctx.fillStyle = this._fillColor;
-				ctx.beginPath();
-				ctx.moveTo(drawingPoint1.x, drawingPoint1.y);
-        ctx.lineTo(drawingPoint2.x, drawingPoint2.y);
-        ctx.lineTo(drawingPoint3.x, drawingPoint3.y);
-				ctx.fill();
+        const bezierCurveInfo = getCubicBezierCurveDrawingPoints(
+          new Point2D(drawingPoint1.x, drawingPoint1.y),
+          new Point2D(drawingPoint3.x, drawingPoint3.y),
+          new Point2D(drawingPoint2.x, drawingPoint2.y),
+        );
+				fillBezierPath(scope, bezierCurveInfo, this._fillColor);
 			}
 		});
 	}
@@ -75,13 +153,13 @@ interface ViewPoint {
 	y: Coordinate | null;
 }
 
-class TrianglePaneView implements IPrimitivePaneView {
-	_source: Triangle;
+class CurvePaneView implements IPrimitivePaneView {
+	_source: Curve;
 	_p1: ViewPoint = { x: null, y: null };
 	_p2: ViewPoint = { x: null, y: null };
 	_p3: ViewPoint = { x: null, y: null };
 
-	constructor(source: Triangle) {
+	constructor(source: Curve) {
 		this._source = source;
 	}
 
@@ -102,18 +180,18 @@ class TrianglePaneView implements IPrimitivePaneView {
 
 	renderer() {
 		const n: number = this._source._numPointsToUse;
-    let points: ViewPoint[] = [];
+    const points: ViewPoint[] = [];
     for (let i: number = 0; i < n; i++) {
       points.push(i == 0 ? this._p1 : i == 1 ? this._p2 : this._p3);
     } 
-    return new TrianglePaneRenderer(
+    return new CurvePaneRenderer(
 			points,
 			this._source._options.fillColor
 		);
 	}
 }
 
-class TriangleAxisPaneRenderer implements IPrimitivePaneRenderer {
+class CurveAxisPaneRenderer implements IPrimitivePaneRenderer {
 	_p1: number | null;
 	_p2: number | null;
 	_p3: number | null;
@@ -158,14 +236,14 @@ class TriangleAxisPaneRenderer implements IPrimitivePaneRenderer {
 	}
 }
 
-abstract class TriangleAxisPaneView implements IPrimitivePaneView {
-	_source: Triangle;
+abstract class CurveAxisPaneView implements IPrimitivePaneView {
+	_source: Curve;
 	_p1: number | null = null;
 	_p2: number | null = null;
 	_p3: number | null = null;
 	_vertical: boolean = false;
 
-	constructor(source: Triangle, vertical: boolean) {
+	constructor(source: Curve, vertical: boolean) {
 		this._source = source;
 		this._vertical = vertical;
 	}
@@ -177,7 +255,7 @@ abstract class TriangleAxisPaneView implements IPrimitivePaneView {
 	}
 
 	renderer() {
-		return new TriangleAxisPaneRenderer(
+		return new CurveAxisPaneRenderer(
 			this._p1,
 			this._p2,
 			this._p3,
@@ -190,7 +268,7 @@ abstract class TriangleAxisPaneView implements IPrimitivePaneView {
 	}
 }
 
-class TrianglePriceAxisPaneView extends TriangleAxisPaneView {
+class CurvePriceAxisPaneView extends CurveAxisPaneView {
 	getPoints(): [Coordinate | null, Coordinate | null, Coordinate | null] {
 		const series = this._source.series;
 		const y1 = series.priceToCoordinate(this._source._p1.price);
@@ -200,7 +278,7 @@ class TrianglePriceAxisPaneView extends TriangleAxisPaneView {
 	}
 }
 
-class TriangleTimeAxisPaneView extends TriangleAxisPaneView {
+class CurveTimeAxisPaneView extends CurveAxisPaneView {
 	getPoints(): [Coordinate | null, Coordinate | null, Coordinate | null] {
 		const timeScale = this._source.chart.timeScale();
 		const x1 = timeScale.timeToCoordinate(this._source._p1.time);
@@ -210,11 +288,11 @@ class TriangleTimeAxisPaneView extends TriangleAxisPaneView {
 	}
 }
 
-abstract class TriangleAxisView implements ISeriesPrimitiveAxisView {
-	_source: Triangle;
+abstract class CurveAxisView implements ISeriesPrimitiveAxisView {
+	_source: Curve;
 	_p: Point;
 	_pos: Coordinate | null = null;
-	constructor(source: Triangle, p: Point) {
+	constructor(source: Curve, p: Point) {
 		this._source = source;
 		this._p = p;
 	}
@@ -245,7 +323,7 @@ abstract class TriangleAxisView implements ISeriesPrimitiveAxisView {
 	}
 }
 
-class TriangleTimeAxisView extends TriangleAxisView {
+class CurveTimeAxisView extends CurveAxisView {
 	update() {
 		const timeScale = this._source.chart.timeScale();
 		this._pos = timeScale.timeToCoordinate(this._p.time);
@@ -255,7 +333,7 @@ class TriangleTimeAxisView extends TriangleAxisView {
 	}
 }
 
-class TrianglePriceAxisView extends TriangleAxisView {
+class CurvePriceAxisView extends CurveAxisView {
 	update() {
 		const series = this._source.series;
 		this._pos = series.priceToCoordinate(this._p.price);
@@ -270,7 +348,7 @@ interface Point {
 	price: number;
 }
 
-export interface TriangleDrawingToolOptions {
+export interface CurveDrawingToolOptions {
 	fillColor: string;
 	previewFillColor: string;
 	labelColor: string;
@@ -280,10 +358,10 @@ export interface TriangleDrawingToolOptions {
 	timeLabelFormatter: (time: Time) => string;
 }
 
-const defaultOptions: TriangleDrawingToolOptions = {
-	fillColor: 'rgba(234, 116, 19, 0.61)',
-	previewFillColor: 'rgba(234, 116, 19, 0.36)',
-	labelColor: 'rgba(234, 116, 19, 0.74)',
+const defaultOptions: CurveDrawingToolOptions = {
+	fillColor: 'rgba(19, 148, 234, 0.59)',
+	previewFillColor: 'rgba(19, 148, 234, 0.36)',
+	labelColor: 'rgba(19, 148, 234, 0.59)',
 	labelTextColor: 'white',
 	showLabels: true,
 	priceLabelFormatter: (price: number) => price.toFixed(3), // => price.toFixed(2),
@@ -296,21 +374,21 @@ const defaultOptions: TriangleDrawingToolOptions = {
 	},
 };
 
-class Triangle extends PluginBase {
-	_options: TriangleDrawingToolOptions;
+class Curve extends PluginBase {
+	_options: CurveDrawingToolOptions;
 	_p1: Point;
 	_p2: Point;
 	_p3: Point;
-	_paneViews: TrianglePaneView[];
-	_timeAxisViews: TriangleTimeAxisView[];
-	_priceAxisViews: TrianglePriceAxisView[];
-	_priceAxisPaneViews: TrianglePriceAxisPaneView[];
-	_timeAxisPaneViews: TriangleTimeAxisPaneView[];
+	_paneViews: CurvePaneView[];
+	_timeAxisViews: CurveTimeAxisView[];
+	_priceAxisViews: CurvePriceAxisView[];
+	_priceAxisPaneViews: CurvePriceAxisPaneView[];
+	_timeAxisPaneViews: CurveTimeAxisPaneView[];
   _numPointsToUse: number;
 
 	constructor(
 		points: Point[],
-		options: Partial<TriangleDrawingToolOptions> = {}
+		options: Partial<CurveDrawingToolOptions> = {}
 	) {
 		super();
     if (points.length == 0) {
@@ -328,19 +406,19 @@ class Triangle extends PluginBase {
 			...defaultOptions,
 			...options,
 		};
-		this._paneViews = [new TrianglePaneView(this)];
+		this._paneViews = [new CurvePaneView(this)];
 		this._timeAxisViews = [
-			new TriangleTimeAxisView(this, this._p1),
-			new TriangleTimeAxisView(this, this._p2),
-			new TriangleTimeAxisView(this, this._p3),
+			new CurveTimeAxisView(this, this._p1),
+			new CurveTimeAxisView(this, this._p2),
+			new CurveTimeAxisView(this, this._p3),
 		];
 		this._priceAxisViews = [
-			new TrianglePriceAxisView(this, this._p1),
-			new TrianglePriceAxisView(this, this._p2),
-			new TrianglePriceAxisView(this, this._p3),
+			new CurvePriceAxisView(this, this._p1),
+			new CurvePriceAxisView(this, this._p2),
+			new CurvePriceAxisView(this, this._p3),
 		];
-		this._priceAxisPaneViews = [new TrianglePriceAxisPaneView(this, true)];
-		this._timeAxisPaneViews = [new TriangleTimeAxisPaneView(this, false)];
+		this._priceAxisPaneViews = [new CurvePriceAxisPaneView(this, true)];
+		this._timeAxisPaneViews = [new CurveTimeAxisPaneView(this, false)];
 	}
 
 	updateAllViews() {
@@ -371,22 +449,22 @@ class Triangle extends PluginBase {
 		return this._timeAxisPaneViews;
 	}
 
-	applyOptions(options: Partial<TriangleDrawingToolOptions>) {
+	applyOptions(options: Partial<CurveDrawingToolOptions>) {
 		this._options = { ...this._options, ...options };
 		this.requestUpdate();
 	}
 }
 
-class PreviewTriangle extends Triangle {
+class PreviewDrawing extends Curve {
   constructor(
 		points: Point[],
-		options: Partial<TriangleDrawingToolOptions> = {}
+		options: Partial<CurveDrawingToolOptions> = {}
 	) {
 		super(points, options);
 		this._options.fillColor = this._options.previewFillColor;
 	}
 
-	public updateTrianglePoint(p: Point, pointIndexToUpdate : number) {
+	public updateDrawingPoint(p: Point, pointIndexToUpdate : number) {
     pointIndexToUpdate = Math.min(Math.max(0, pointIndexToUpdate), 3);
 
     switch (pointIndexToUpdate) {
@@ -408,24 +486,24 @@ class PreviewTriangle extends Triangle {
 	}
 }
 
-export class TriangleDrawingTool {
+export class CurveDrawingTool {
 	private _chart: IChartApi | undefined;
 	private _series: ISeriesApi<SeriesType> | undefined;
-	private _defaultOptions: Partial<TriangleDrawingToolOptions>;
-	private _triangles: Triangle[];
-	private _previewTriangle: PreviewTriangle | undefined = undefined;
+	private _defaultOptions: Partial<CurveDrawingToolOptions>;
+	private _drawings: Curve[];
+	private _previewDrawing: PreviewDrawing | undefined = undefined;
 	private _points: Point[] = [];
 	private _drawing: boolean = false;
 
 	constructor(
 		chart: IChartApi,
 		series: ISeriesApi<SeriesType>,
-		options: Partial<TriangleDrawingToolOptions>
+		options: Partial<CurveDrawingToolOptions>
 	) {
 		this._chart = chart;
 		this._series = series;
 		this._defaultOptions = options;
-		this._triangles = [];
+		this._drawings = [];
 		this._chart.subscribeClick(this._clickHandler);
 		this._chart.subscribeCrosshairMove(this._moveHandler);
 	}
@@ -439,11 +517,11 @@ export class TriangleDrawingTool {
 			this._chart.unsubscribeClick(this._clickHandler);
 			this._chart.unsubscribeCrosshairMove(this._moveHandler);
 		}
-		this._triangles.forEach(triangle => {
-			this._removeTriangle(triangle);
+		this._drawings.forEach(drawing => {
+			this._removeDrawing(drawing);
 		});
-		this._triangles = [];
-		this._removePreviewTriangle();
+		this._drawings = [];
+		this._removePreviewDrawing();
 		this._chart = undefined;
 		this._series = undefined;
 	}
@@ -484,8 +562,8 @@ export class TriangleDrawingTool {
 
 		const numPoints: number = this._points.length;
 
-		if (this._previewTriangle) {
-			this._previewTriangle.updateTrianglePoint(
+		if (this._previewDrawing) {
+			this._previewDrawing.updateDrawingPoint(
 				{
 					time: param.time,
 					price,
@@ -497,36 +575,36 @@ export class TriangleDrawingTool {
 	private _addPoint(p: Point) {
 		this._points.push(p);
 		if (this._points.length > 2) {
-			this._addNewTriangle(this._points[0], this._points[1],  this._points[2]);
+			this._addNewDrawing(this._points[0], this._points[1],  this._points[2]);
 			this.stopDrawing();
-			this._removePreviewTriangle();
+			this._removePreviewDrawing();
 		}
 		if (this._points.length === 1) {
-			this._addPreviewTriangle(this._points[0]);
+			this._addPreviewDrawing(this._points[0]);
 		}
 	}
 
-	private _addNewTriangle(p1: Point, p2: Point, p3: Point) {
-		const triangle = new Triangle([p1, p2, p3], { ...this._defaultOptions });
-		this._triangles.push(triangle);
-		ensureDefined(this._series).attachPrimitive(triangle);
+	private _addNewDrawing(p1: Point, p2: Point, p3: Point) {
+		const drawing = new Curve([p1, p2, p3], { ...this._defaultOptions });
+		this._drawings.push(drawing);
+		ensureDefined(this._series).attachPrimitive(drawing);
 	}
 
-	private _removeTriangle(triangle: Triangle) {
-		ensureDefined(this._series).detachPrimitive(triangle);
+	private _removeDrawing(drawing: Curve) {
+		ensureDefined(this._series).detachPrimitive(drawing);
 	}
 
-	private _addPreviewTriangle(p: Point) {
-		this._previewTriangle = new PreviewTriangle([p], {
+	private _addPreviewDrawing(p: Point) {
+		this._previewDrawing = new PreviewDrawing([p], {
 			...this._defaultOptions,
 		});
-		ensureDefined(this._series).attachPrimitive(this._previewTriangle);
+		ensureDefined(this._series).attachPrimitive(this._previewDrawing);
 	}
 
-	private _removePreviewTriangle() {
-		if (this._previewTriangle) {
-			ensureDefined(this._series).detachPrimitive(this._previewTriangle);
-			this._previewTriangle = undefined;
+	private _removePreviewDrawing() {
+		if (this._previewDrawing) {
+			ensureDefined(this._series).detachPrimitive(this._previewDrawing);
+			this._previewDrawing = undefined;
 		}
 	}
 }

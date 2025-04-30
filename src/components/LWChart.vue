@@ -25,6 +25,8 @@ import { useDrawingsStore } from '../stores/drawings.ts';
 import { DrawingType } from '../types/drawings.ts';
 import { BandsIndicator } from '../plugins/indicators-plugin/bands-indicator.ts'
 import { SMAIndicator } from '../plugins/indicators-plugin/simple-moving-average-indicator.ts'
+import { FibSpiralDrawingTool } from '../plugins/drawings-plugin/fibonacci-spiral-drawing-tool.ts';
+import { CurveDrawingTool } from '../plugins/drawings-plugin/curve-drawing-tool.ts';
 
 const props = defineProps({
 	type: {
@@ -106,7 +108,8 @@ const createDrawingTools = (chart, series) => {
   let drawingTools = {
     "rectangle": new RectangleDrawingTool(chart, series),
     "triangle": new TriangleDrawingTool(chart, series),
-    "fibonacci_channel": new FibChannelDrawingTool(chart, series)
+    "fibonacci_channel": new CurveDrawingTool(chart, series),
+    //"fibonacci_spiral": new FibSpiralDrawingTool(chart, series),
   }
 
   for (let tool in drawingTools) {
@@ -204,15 +207,6 @@ const addSeriesAndData = props => {
 	series = chart.addSeries(seriesDefinition, props.seriesOptions);
 	series.setData(props.data);
 
-  const dataLength = props.data.length;
-  const point1 = {
-  	time: props.data[dataLength - 50].time,
-  	price: props.data[dataLength - 50].value * 0.9,
-  };
-  const point2 = {
-  	time: props.data[dataLength - 5].time,
-  	price: props.data[dataLength - 5].value * 1.10,
-  };
 
   drawingTools = createDrawingTools(chart, series)
 
@@ -228,6 +222,7 @@ const addSeriesAndData = props => {
   //createVolumeProfile(chart, series, props.data);
   //createAnchoredText(chart, series);
   //createFibChannelDrawingTool(chart, series);
+  //createFibSprialDrawingTool(chart, series);
 };
 
 onMounted(() => {

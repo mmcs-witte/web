@@ -187,3 +187,127 @@ export class TrendLine implements ISeriesPrimitive<Time> {
 		return index;
 	}
 }
+
+
+export class TrendLineDrawingTool {
+  private _chart: IChartApi | undefined;
+  private _series: ISeriesApi<SeriesType> | undefined;
+  private _defaultOptions: Partial<TrendLineOptions>;
+  private _drawings: TrendLine[];
+  private _previewDrawing: PreviewTrendLine | undefined = undefined;
+  private _points: Point[] = [];
+  private _drawing: boolean = false;
+
+  constructor(
+    chart: IChartApi,
+    series: ISeriesApi<SeriesType>,
+    options: Partial<TrendLineOptions>
+  ) {
+    this._chart = chart;
+    this._series = series;
+    this._defaultOptions = options;
+    this._drawings = [];
+    this._chart.subscribeClick(this._clickHandler);
+    this._chart.subscribeCrosshairMove(this._moveHandler);
+  }
+
+  private _clickHandler = (param: MouseEventParams) => this._onClick(param);
+  private _moveHandler = (param: MouseEventParams) => this._onMouseMove(param);
+
+  remove() {
+    this.stopDrawing();
+    if (this._chart) {
+      this._chart.unsubscribeClick(this._clickHandler);
+      this._chart.unsubscribeCrosshairMove(this._moveHandler);
+    }
+    this._drawings.forEach(triangle => {
+      this._removeTrendline(triangle);
+    });
+    this._drawings = [];
+    this._removePreviewTrendline();
+    this._chart = undefined;
+    this._series = undefined;
+  }
+
+  startDrawing(): void {
+    this._drawing = true;
+    this._points = [];
+  }
+
+  stopDrawing(): void {
+    this._drawing = false;
+    this._points = [];
+  }
+
+  isDrawing(): boolean {
+    return this._drawing;
+  }
+
+  private _onClick(param: MouseEventParams) {
+    if (!this._drawing || !param.point || !param.time || !this._series) return;
+    const price = this._series.coordinateToPrice(param.point.y);
+    if (price === null) {
+      return;
+    }
+
+    this._addPoint({
+      time: param.time,
+      price
+    });
+  }
+
+  private _onMouseMove(param: MouseEventParams) {
+    if (!this._drawing || !param.point || !param.time || !this._series) return;
+    const price = this._series.coordinateToPrice(param.point.y);
+    if (price === null) {
+      return;
+    }
+
+    const numPoints: number = this._points.length;
+
+    if (this._previewDrawing) {
+      this._previewDrawing.updateTrianglePoint(
+        {
+          time: param.time,
+          price,
+        },
+        numPoints);
+    }
+  }
+
+  private _addPoint(p: Point) {
+    this._points.push(p);
+    if (this._points.length > 2) {
+      this._addNewTrendLine(this._points[0], this._points[1],  this._points[2]);
+      this.stopDrawing();
+      this._removePreviewTrendline();
+    }
+    if (this._points.length === 1) {
+      this._addPreviewTrendline(this._points[0]);
+    }
+  }
+
+  private _addNewTrendLine(p1: Point, p2: Point) {
+    const triangle = new TrendLine([p1, p2], { ...this._defaultOptions });
+    this._drawings.push(triangle);
+    ensureDefined(this._series).attachPrimitive(triangle);
+  }
+
+  private _removeTrendline(triangle: Triangle) {
+    ensureDefined(this._series).detachPrimitive(triangle);
+  }
+
+  private _addPreviewTrendline(p: Point) {
+    this._previewDrawing = new PreviewTriangle([p], {
+      ...this._defaultOptions,
+    });
+    ensureDefined(this._series).attachPrimitive(this._previewDrawing);
+  }
+
+  private _removePreviewTrendline() {
+    if (this._previewDrawing) {
+      ensureDefined(this._series).detachPrimitive(this._previewDrawing);
+      this._previewDrawing = undefined;
+    }
+  }
+}
