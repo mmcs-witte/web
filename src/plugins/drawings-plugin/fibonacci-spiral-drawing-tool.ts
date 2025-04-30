@@ -63,7 +63,7 @@ class FibSpiralPaneRenderer implements IPrimitivePaneRenderer {
       const ctx = scope.context;
       ctx.save();
       ctx.translate(rotationCenter.x, rotationCenter.y);
-      ctx.rotate(-spiralRotationAngle);
+      ctx.rotate(spiralRotationAngle);
 
       ctx.beginPath();
 
@@ -142,8 +142,8 @@ class FibSpiralPaneView implements IPrimitivePaneView {
 
       let initDir = p2.subtract(p1);
 
-      spiralRotationAngle = angleBetweenVectors(initDir, new Vector2D(1, 0));
-      initDir = rotateVector(initDir, spiralRotationAngle);
+      spiralRotationAngle = -angleBetweenVectors(initDir, new Vector2D(1, 0));
+      initDir = rotateVector(initDir, -spiralRotationAngle);
 
       const rotationCenter: Vector2D = p1;
       const directionPoint: Vector2D = p1.add(initDir);
@@ -210,14 +210,10 @@ class FibSpiralPaneView implements IPrimitivePaneView {
 
       spiralRotationCenter = {x: p1.x, y: p1.y };
 
-      // TODO: learn how to Extend line a bit later
-      // CFPoint points[2] = { p0, p1 };
-      // ExtendLineToSecondPoint(points);
-      // auto rayLength = MathHelper::GetDistanceBetweenPoints(points[0], points[1]);
-      //rayEnd = rotationCenter.add(new Vector2D(rayLength, 0.0));
-  
       rayStart = spiralRotationCenter;
-      rayEnd = {x: directionPoint.x, y: directionPoint.y};
+
+      const bigNumber: number = 3000; // Hack: extending ray beyond the end of the screen
+      rayEnd = {x: directionPoint.x + bigNumber, y: directionPoint.y};
     }
 
     return {
