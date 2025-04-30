@@ -15,7 +15,7 @@ import {
 	BaselineSeries,
 } from 'lightweight-charts';
 import { AnchoredText } from "../plugins/anchored-text/anchored-text.ts";
-import { TrendLine } from '../plugins/drawings-plugin/trend-line.ts';
+import { TrendLine, TrendLineDrawingTool } from '../plugins/drawings-plugin/trend-line.ts';
 import { RectangleDrawingTool } from '../plugins/drawings-plugin/rectangle-drawing-tool.ts';
 import { TriangleDrawingTool } from '../plugins/drawings-plugin/triangle-drawing-tool.ts';
 import { FibChannelDrawingTool } from '../plugins/drawings-plugin/fibonacci-channel-drawing-tool.ts';
@@ -111,6 +111,7 @@ const createDrawingTools = (chart, series) => {
     "fibonacci_channel": new FibChannelDrawingTool(chart, series),
     "fibonacci_spiral": new FibSpiralDrawingTool(chart, series),
     "curve": new CurveDrawingTool(chart, series),
+    "trend_line": new TrendLineDrawingTool(chart, series),
   }
 
   for (let tool in drawingTools) {

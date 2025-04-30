@@ -7,4 +7,5 @@ export enum DrawingType {
   FibonacciChannel = "FIBONACCI_CHANNEL",
   FibonacciSpiral = "FIBONACCI_SPIRAL",
   Curve = "CURVE",
+  TrendLine = "TREND_LINE",
 }
