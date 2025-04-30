@@ -103,10 +103,14 @@ const resizeHandler = () => {
 const drawingStore = useDrawingsStore()
 
 const createDrawingTools = (chart, series) => {
-  const drawingTools = {
+  let drawingTools = {
     "rectangle": new RectangleDrawingTool(chart, series),
     "triangle": new TriangleDrawingTool(chart, series),
     "fibonacci_channel": new FibChannelDrawingTool(chart, series)
+  }
+
+  for (let tool in drawingTools) {
+    series.attachPrimitive(tool);
   }
 
   return drawingTools
@@ -117,7 +121,6 @@ let selectedDrawingTool = ref(DrawingType.Arrow)
 drawingStore.$subscribe((mutation, store) => {
   if (store.currentDrawing === DrawingType.Arrow) return
   selectedDrawingTool.value = getDrawingTool(store.currentDrawing)
-  series.attachPrimitive(selectedDrawingTool.value)
 
   selectedDrawingTool.value.startDrawing()
   drawingStore.currentDrawing = DrawingType.Arrow
