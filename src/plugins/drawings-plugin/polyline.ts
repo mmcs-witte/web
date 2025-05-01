@@ -18,6 +18,43 @@ import type {
 import { ensureDefined } from '../../helpers/assertions.ts';
 import { PluginBase } from '../plugin-base.ts';
 import { positionsBox } from '../../helpers/dimensions/positions.ts';
+import { Point as Point2D } from '@flatten-js/core';
+import { Vector as Vector2D } from '@flatten-js/core';
+
+export interface ClassicArrowRenderInfo {
+  arrowWing1: Point2D;
+  arrowBase: Point2D;
+  arrowWing2: Point2D;
+}
+
+export function CalculateClassicArrowRenderInfo(lineStart: Point2D, lineEnd: Point2D): ClassicArrowRenderInfo {
+  const p0: Vector2D = new Vector2D(lineStart.x, lineStart.y);
+  const p1: Vector2D = new Vector2D(lineEnd.x, lineEnd.y);
+  
+  let lineDirectionVec = p1.subtract(p0);
+	let linePerpendicularVec = new Vector2D(-lineDirectionVec.y, lineDirectionVec.x);
+
+  linePerpendicularVec = linePerpendicularVec.normalize();
+	lineDirectionVec = lineDirectionVec.normalize();
+
+  const defaultArrowLength: number = 35.0;
+
+	linePerpendicularVec.x *= defaultArrowLength / Math.sqrt(3.0);
+	linePerpendicularVec.y *= defaultArrowLength / Math.sqrt(3.0);
+
+	lineDirectionVec.x *= -defaultArrowLength;
+	lineDirectionVec.y *= -defaultArrowLength;
+
+	const arrowWing1 = p1.add(lineDirectionVec.add(linePerpendicularVec));
+	const arrowBase = p1;
+	const arrowWing2 = p1.add(lineDirectionVec.subtract(linePerpendicularVec));
+
+	return {
+    arrowWing1: new Point2D(arrowWing1.x, arrowWing1.y), 
+    arrowBase: new Point2D(arrowBase.x, arrowBase.y), 
+    arrowWing2: new Point2D(arrowWing2.x, arrowWing2.y), 
+  };
+}
 
 class PolylinePaneRenderer implements IPrimitivePaneRenderer {
 	_points: ViewPoint[];
@@ -55,6 +92,18 @@ class PolylinePaneRenderer implements IPrimitivePaneRenderer {
         ctx.lineTo(this._points[i].x, this._points[i].y);
       }
       ctx.stroke();
+
+      // drawing arrow
+      // const n = this._points.length;
+      // const p0: Point2D = new Point2D(this._points[n - 2].x, this._points[n - 2].y);
+      // const p1: Point2D = new Point2D(this._points[n - 1].x, this._points[n - 1].y);
+      // const arrowRenderInfo = CalculateClassicArrowRenderInfo(p0, p1);
+
+      // ctx.beginPath();
+      // ctx.moveTo(arrowRenderInfo.arrowWing2.x, arrowRenderInfo.arrowWing2.y);
+      // ctx.lineTo(arrowRenderInfo.arrowBase.x, arrowRenderInfo.arrowBase.y);
+      // ctx.lineTo(arrowRenderInfo.arrowWing1.x, arrowRenderInfo.arrowWing1.y);
+      // ctx.stroke();
 		});
 	}
 }
@@ -96,161 +145,148 @@ class PolylinePaneView implements IPrimitivePaneView {
 	}
 }
 
-// class PolylineAxisPaneRenderer implements IPrimitivePaneRenderer {
-// 	_p1: number | null;
-// 	_p2: number | null;
-// 	_p3: number | null;
-// 	_fillColor: string;
-// 	_vertical: boolean = false;
+class RectangleAxisPaneRenderer implements IPrimitivePaneRenderer {
+	_p1: number | null;
+	_p2: number | null;
+	_fillColor: string;
+	_vertical: boolean = false;
 
-// 	constructor(
-// 		p1: number | null,
-// 		p2: number | null,
-// 		p3: number | null,
-// 		fillColor: string,
-// 		vertical: boolean
-// 	) {
-// 		this._p1 = p1;
-// 		this._p2 = p2;
-// 		this._p3 = p3;
-// 		this._fillColor = fillColor;
-// 		this._vertical = vertical;
-// 	}
+	constructor(
+		p1: number | null,
+		p2: number | null,
+		fillColor: string,
+		vertical: boolean
+	) {
+		this._p1 = p1;
+		this._p2 = p2;
+		this._fillColor = fillColor;
+		this._vertical = vertical;
+	}
 
-// 	draw(target: CanvasRenderingTarget2D) {
-// 		target.useBitmapCoordinateSpace(scope => {
-// 			if (this._p1 === null || this._p2 === null || this._p3 === null) return;
-// 			const ctx = scope.context;
-// 			ctx.globalAlpha = 0.5;
-			
-//       const posStart: number = Math.min(this._p1, Math.min(this._p2, this._p3));
-//       const posEnd: number = Math.max(this._p1, Math.max(this._p2, this._p3));
-//       const positions = positionsBox(
-// 				posStart,
-// 				posEnd,
-// 				this._vertical ? scope.verticalPixelRatio : scope.horizontalPixelRatio
-// 			);
+	draw(target: CanvasRenderingTarget2D) {
+		target.useBitmapCoordinateSpace(scope => {
+			if (this._p1 === null || this._p2 === null) return;
+			const ctx = scope.context;
+			ctx.globalAlpha = 0.5;
+			const positions = positionsBox(
+				this._p1,
+				this._p2,
+				this._vertical ? scope.verticalPixelRatio : scope.horizontalPixelRatio
+			);
+			ctx.fillStyle = this._fillColor;
+			if (this._vertical) {
+				ctx.fillRect(0, positions.position, 15, positions.length);
+			} else {
+				ctx.fillRect(positions.position, 0, positions.length, 15);
+			}
+		});
+	}
+}
 
-// 			ctx.fillStyle = this._fillColor;
-// 			if (this._vertical) {
-// 				ctx.fillRect(0, positions.position, 15, positions.length);
-// 			} else {
-// 				ctx.fillRect(positions.position, 0, positions.length, 15);
-// 			}
-// 		});
-// 	}
-// }
+abstract class PolylineAxisPaneView implements IPrimitivePaneView {
+	_source: Polyline;
+  _minPoint: number | null = null;
+  _maxPoint: number | null = null;
+	_vertical: boolean = false;
 
-// abstract class PolylineAxisPaneView implements IPrimitivePaneView {
-// 	_source: Polyline;
-//   _points: Point[];
-// 	_vertical: boolean = false;
+	constructor(source: Polyline, vertical: boolean) {
+		this._source = source;
+		this._vertical = vertical;
+	}
 
-// 	constructor(source: Polyline, vertical: boolean) {
-// 		this._source = source;
-//     this._points = source._points;
-// 		this._vertical = vertical;
-// 	}
+	abstract getPoints(): [Coordinate | null, Coordinate | null];
 
-// 	abstract getPoints(): Coordinate[];
+	update() {
+		[this._minPoint, this._maxPoint] = this.getPoints();
+	}
 
-// 	update() {
-// 		[this._p1, this._p2, this._p3] = this.getPoints();
-// 	}
+	renderer() {
+		return new RectangleAxisPaneRenderer(
+			this._minPoint,
+			this._maxPoint,
+			this._source._options.fillColor,
+			this._vertical
+		);
+	}
+	zOrder(): PrimitivePaneViewZOrder {
+		return 'bottom';
+	}
+}
 
-// 	renderer() {
-// 		return new PolylineAxisPaneRenderer(
-// 			this._p1,
-// 			this._p2,
-// 			this._p3,
-// 			this._source._options.fillColor,
-// 			this._vertical
-// 		);
-// 	}
-// 	zOrder(): PrimitivePaneViewZOrder {
-// 		return 'bottom';
-// 	}
-// }
+class PolylinePriceAxisPaneView extends PolylineAxisPaneView {
+	getPoints(): [Coordinate | null, Coordinate | null] {
+		const series = this._source.series;
+		const y1 = series.priceToCoordinate(this._source._bounds._minPrice);
+		const y2 = series.priceToCoordinate(this._source._bounds._maxPrice);
+		return [y1, y2];
+	}
+}
 
-// class PolylinePriceAxisPaneView extends PolylineAxisPaneView {
-// 	getPoints(): [Coordinate | null, Coordinate | null, Coordinate | null] {
-// 		const series = this._source.series;
-// 		const y1 = series.priceToCoordinate(this._source._p1.price);
-// 		const y2 = series.priceToCoordinate(this._source._p2.price);
-// 		const y3 = series.priceToCoordinate(this._source._p3.price);
-// 		return [y1, y2, y3];
-// 	}
-// }
+class PolylineTimeAxisPaneView extends PolylineAxisPaneView {
+	getPoints(): [Coordinate | null, Coordinate | null] {
+		const timeScale = this._source.chart.timeScale();
+		const x1 = timeScale.timeToCoordinate(this._source._bounds._minTime);
+		const x2 = timeScale.timeToCoordinate(this._source._bounds._maxTime);
+		return [x1, x2];
+	}
+}
 
-// class PolylineTimeAxisPaneView extends PolylineAxisPaneView {
-// 	getPoints(): Coordinate[] {
-// 		const timeScale = this._source.chart.timeScale();
-// 		// const x1 = timeScale.timeToCoordinate(this._source._p1.time);
-// 		// const x2 = timeScale.timeToCoordinate(this._source._p2.time);
-// 		// const x3 = timeScale.timeToCoordinate(this._source._p3.time);
-// 		// return [x1, x2, x3];
-//     return [];
-// 	}
-// }
+abstract class PolylineAxisView implements ISeriesPrimitiveAxisView {
+	_source: Polyline;
+  _p: Point;
+	_pos: Coordinate | null = null;
+	constructor(source: Polyline) {
+		this._source = source;
+    this._p = source._points.length > 0 
+    ? source._points[source._points.length - 1]
+    : {time: 0, price: 0};
+	}
+	abstract update(): void;
+	abstract text(): string;
 
-// abstract class PolylineAxisView implements ISeriesPrimitiveAxisView {
-// 	_source: Polyline;
-//   _p: Point;
-// 	_pos: Coordinate | null = null;
-// 	constructor(source: Polyline) {
-// 		this._source = source;
-//     // TODO: don't forget this
-//     this._p = source._points.length > 0 
-//     ? source._points[source._points.length - 1]
-//     : {time: 0, price: 0};
-// 	}
-// 	abstract update(): void;
-// 	abstract text(): string;
+	coordinate() {
+		return this._pos ?? -1;
+	}
 
-// 	coordinate() {
-// 		return this._pos ?? -1;
-// 	}
+	visible(): boolean {
+		return this._source._options.showLabels;
+	}
 
-// 	visible(): boolean {
-// 		return this._source._options.showLabels;
-// 	}
+	tickVisible(): boolean {
+		return this._source._options.showLabels;
+	}
 
-// 	tickVisible(): boolean {
-// 		return this._source._options.showLabels;
-// 	}
+	textColor() {
+		return this._source._options.labelTextColor;
+	}
+	backColor() {
+		return this._source._options.labelColor;
+	}
+	movePoint(p: Point) {
+		this._p = p;
+		this.update();
+	}
+}
 
-// 	textColor() {
-// 		return this._source._options.labelTextColor;
-// 	}
-// 	backColor() {
-// 		return this._source._options.labelColor;
-// 	}
-// 	movePoint(p: Point) {
-//     // TODO: don't forget this
-// 		// this._p = p;
-// 		// this.update();
-// 	}
-// }
+class PolylineTimeAxisView extends PolylineAxisView {
+	update() {
+		const timeScale = this._source.chart.timeScale();
+		this._pos = timeScale.timeToCoordinate(this._p.time);
+	}
+	text() {
+		return this._source._options.timeLabelFormatter(this._p.time);
+	}
+}
 
-// class PolylineTimeAxisView extends PolylineAxisView {
-// 	update() {
-// 		const timeScale = this._source.chart.timeScale();
-// 		this._pos = timeScale.timeToCoordinate(this._p.time);
-// 	}
-// 	text() {
-// 		return this._source._options.timeLabelFormatter(this._p.time);
-// 	}
-// }
-
-// class PolylinePriceAxisView extends PolylineAxisView {
-// 	update() {
-// 		const series = this._source.series;
-// 		this._pos = series.priceToCoordinate(this._p.price);
-// 	}
-// 	text() {
-// 		return this._source._options.priceLabelFormatter(this._p.price);
-// 	}
-// }
+class PolylinePriceAxisView extends PolylineAxisView {
+	update() {
+		const series = this._source.series;
+		this._pos = series.priceToCoordinate(this._p.price);
+	}
+	text() {
+		return this._source._options.priceLabelFormatter(this._p.price);
+	}
+}
 
 interface Point {
 	time: Time;
@@ -283,12 +319,19 @@ const defaultOptions: PolylineDrawingToolOptions = {
 	},
 };
 
+interface DrawingBounds {
+  _minTime: number;
+  _maxTime: number;
+  _minPrice: number;
+  _maxPrice: number;
+}
 class Polyline extends PluginBase {
 	_options: PolylineDrawingToolOptions;
 	_points: Point[];
+  _bounds: DrawingBounds;
 	_paneViews: PolylinePaneView[];
-	// _timeAxisViews: PolylineTimeAxisView[];
-	// _priceAxisViews: PolylinePriceAxisView[];
+	 _timeAxisViews: PolylineTimeAxisView[];
+	_priceAxisViews: PolylinePriceAxisView[];
 	// _priceAxisPaneViews: PolylinePriceAxisPaneView[];
 	// _timeAxisPaneViews: PolylineTimeAxisPaneView[];
 
@@ -297,39 +340,57 @@ class Polyline extends PluginBase {
 		options: Partial<PolylineDrawingToolOptions> = {}
 	) {
 		super();
+    
+    this._bounds =  {_minTime: 0, _maxTime: 0, _minPrice: 0, _maxPrice: 0};
     this._points = points;
+    this._points.forEach((point) => {
+      this._updateDrawingBounds(point);
+    })
 		this._options = {
 			...defaultOptions,
 			...options,
 		};
 		this._paneViews = [new PolylinePaneView(this)];
-		// this._timeAxisViews = [
-		// 	new PolylineTimeAxisView(this),
-		// ];
-		// this._priceAxisViews = [
-		// 	new PolylinePriceAxisView(this),
-		// ];
+		this._timeAxisViews = [new PolylineTimeAxisView(this)];
+		this._priceAxisViews = [new PolylinePriceAxisView(this)];
 
-    // TODO: comment this pane views for now
 		// this._priceAxisPaneViews = [new PolylinePriceAxisPaneView(this, true)];
 		// this._timeAxisPaneViews = [new PolylineTimeAxisPaneView(this, false)];
 	}
 
+  public addPoint(p: Point) {
+    this._updateDrawingBounds(p);
+    this._points.push(p);
+    this.requestUpdate();
+  }
+
+	public updatePoint(p: Point, index : number) {
+    if (index >= this._points.length || index < 0)
+      return;
+
+    this._points[index] = p;
+		this._paneViews[0].update();
+		this._timeAxisViews[0].movePoint(p);
+		this._priceAxisViews[0].movePoint(p);
+
+		this.requestUpdate();
+	}
+
 	updateAllViews() {
 		this._paneViews.forEach(pw => pw.update());
-		// this._timeAxisViews.forEach(pw => pw.update());
-		// this._priceAxisViews.forEach(pw => pw.update());
+		this._timeAxisViews.forEach(pw => pw.update());
+		this._priceAxisViews.forEach(pw => pw.update());
 		// this._priceAxisPaneViews.forEach(pw => pw.update());
 		// this._timeAxisPaneViews.forEach(pw => pw.update());
 	}
 
-	// priceAxisViews() {
-	// 	return this._priceAxisViews;
-	// }
+	priceAxisViews() {
+		return this._priceAxisViews;
+	}
 
-	// timeAxisViews() {
-	// 	return this._timeAxisViews;
-	// }
+	timeAxisViews() {
+		return this._timeAxisViews;
+	}
 
 	paneViews() {
 		return this._paneViews;
@@ -347,6 +408,14 @@ class Polyline extends PluginBase {
 		this._options = { ...this._options, ...options };
 		this.requestUpdate();
 	}
+
+  private _updateDrawingBounds(point: Point) {
+    this._bounds._minPrice = Math.min(this._bounds._minPrice, point.price);
+    this._bounds._maxPrice = Math.max(this._bounds._maxPrice, point.price);
+
+    this._bounds._minTime = Math.min(this._bounds._minTime, point.time);
+    this._bounds._maxTime = Math.max(this._bounds._maxTime, point.time);
+  }
 }
 
 class PreviewPolyline extends Polyline {
@@ -356,23 +425,6 @@ class PreviewPolyline extends Polyline {
 	) {
 		super(points, options);
 		this._options.fillColor = this._options.previewFillColor;
-	}
-
-  public addPoint(p: Point) {
-    this._points.push(p);
-    this.requestUpdate();
-  }
-
-	public updatePoint(p: Point, index : number) {
-    if (index >= this._points.length || index < 0)
-      return;
-
-    this._points[index] = p;
-		this._paneViews[0].update();
-		// this._timeAxisViews[pointIndexToUpdate].movePoint(p);
-		// this._priceAxisViews[pointIndexToUpdate].movePoint(p);
-
-		this.requestUpdate();
 	}
 }
 
@@ -443,9 +495,9 @@ export class PolylineDrawingTool {
     const newPoint: Point = { time: param.time, price };
 
     this._addPoint(newPoint);
-    this._addPoint(newPoint);
 
     if (this._previewDrawing == null) {
+      this._addPoint(newPoint);
       this._addPreviewDrawing(this._points);
     }
 	}
