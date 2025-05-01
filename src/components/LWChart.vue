@@ -28,6 +28,8 @@ import { SMAIndicator } from '../plugins/indicators-plugin/simple-moving-average
 import { FibSpiralDrawingTool } from '../plugins/drawings-plugin/fibonacci-spiral-drawing-tool.ts';
 import { CurveDrawingTool } from '../plugins/drawings-plugin/curve-drawing-tool.ts';
 import { TimeLineDrawingTool } from '../plugins/drawings-plugin/time-line-tool.ts';
+import { useIndicatorsStore } from '../stores/indicators.ts';
+import { IndicatorType } from '../types/indicators.ts';
 
 const props = defineProps({
 	type: {
@@ -74,6 +76,14 @@ function getChartSeriesDefinition(type) {
 	return LineSeries;
 }
 
+
+function getChartIndicatorsDefinition(type) {
+	switch (type.toLowerCase()) {
+		case 'sma':
+			return SMAIndicator;
+	}
+}
+
 function getDrawingTool(type) {
   return drawingTools[type.toLowerCase()]
 }
@@ -83,6 +93,10 @@ function getDrawingTool(type) {
 let series;
 let chart;
 let drawingTools;
+let selectedDrawingTool = ref(DrawingType.Arrow)
+
+let indicatorsList;
+
 const chartContainer = ref();
 
 const fitContent = () => {
@@ -104,6 +118,7 @@ const resizeHandler = () => {
 };
 
 const drawingStore = useDrawingsStore()
+const indicatorsStore = useIndicatorsStore()
 
 const createDrawingTools = (chart, series) => {
   let drawingTools = {
@@ -123,14 +138,33 @@ const createDrawingTools = (chart, series) => {
   return drawingTools
 }
 
-let selectedDrawingTool = ref(DrawingType.Arrow)
-
 drawingStore.$subscribe((mutation, store) => {
   if (store.currentDrawing === DrawingType.Arrow) return
   selectedDrawingTool.value = getDrawingTool(store.currentDrawing)
   selectedDrawingTool.value.startDrawing()
   drawingStore.currentDrawing = DrawingType.Arrow
 })
+
+indicatorsStore.$subscribe((mutation, store) => {
+  debugger
+  console.log(store.addedIndicator)
+  if (store.addedIndicator === null) return
+
+  if (indicatorsList.includes(store.addedIndicator)) {
+    store.addedIndicator = null
+    return
+  }
+
+  addIndicator(store.addedIndicator)
+
+  indicatorsList.push(store.addedIndicator)
+  store.addedIndicator = null
+})
+
+const addIndicator = (indicatorType) => {
+  const indicator = new getChartIndicatorsDefinition(indicatorType);
+  series.attachPrimitive(indicator);
+}
 
 const createTrendLine = (chart, series, point1, point2, width) => {
   const trendLine = new TrendLine(chart, series, point1, point2, {
@@ -182,8 +216,6 @@ const addSeriesAndData = props => {
 	series.setData(props.data);
 
   drawingTools = createDrawingTools(chart, series)
-  // const smaIndicator = new SMAIndicator();
-  // series.attachPrimitive(smaIndicator);
 };
 
 onMounted(() => {
@@ -210,6 +242,8 @@ onMounted(() => {
 	if (props.autosize) {
 		window.addEventListener('resize', resizeHandler);
 	}
+
+  indicatorsList = []
 });
 
 onUnmounted(() => {
