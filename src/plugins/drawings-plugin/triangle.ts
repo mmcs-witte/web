@@ -386,7 +386,7 @@ class PreviewTriangle extends Triangle {
 		this._options.fillColor = this._options.previewFillColor;
 	}
 
-	public updateTrianglePoint(p: Point, pointIndexToUpdate : number) {
+	public updateDrawingPoint(p: Point, pointIndexToUpdate : number) {
     pointIndexToUpdate = Math.min(Math.max(0, pointIndexToUpdate), 3);
 
     switch (pointIndexToUpdate) {
@@ -412,8 +412,8 @@ export class TriangleDrawingTool {
 	private _chart: IChartApi | undefined;
 	private _series: ISeriesApi<SeriesType> | undefined;
 	private _defaultOptions: Partial<TriangleDrawingToolOptions>;
-	private _triangles: Triangle[];
-	private _previewTriangle: PreviewTriangle | undefined = undefined;
+	private _drawings: Triangle[];
+	private _previewDrawing: PreviewTriangle | undefined = undefined;
 	private _points: Point[] = [];
 	private _drawing: boolean = false;
 
@@ -425,7 +425,7 @@ export class TriangleDrawingTool {
 		this._chart = chart;
 		this._series = series;
 		this._defaultOptions = options;
-		this._triangles = [];
+		this._drawings = [];
 		this._chart.subscribeClick(this._clickHandler);
 		this._chart.subscribeCrosshairMove(this._moveHandler);
 	}
@@ -439,11 +439,11 @@ export class TriangleDrawingTool {
 			this._chart.unsubscribeClick(this._clickHandler);
 			this._chart.unsubscribeCrosshairMove(this._moveHandler);
 		}
-		this._triangles.forEach(triangle => {
-			this._removeTriangle(triangle);
+		this._drawings.forEach(triangle => {
+			this._removeDrawing(triangle);
 		});
-		this._triangles = [];
-		this._removePreviewTriangle();
+		this._drawings = [];
+		this._removePreviewDrawing();
 		this._chart = undefined;
 		this._series = undefined;
 	}
@@ -484,8 +484,8 @@ export class TriangleDrawingTool {
 
 		const numPoints: number = this._points.length;
 
-		if (this._previewTriangle) {
-			this._previewTriangle.updateTrianglePoint(
+		if (this._previewDrawing) {
+			this._previewDrawing.updateDrawingPoint(
 				{
 					time: param.time,
 					price,
@@ -497,36 +497,36 @@ export class TriangleDrawingTool {
 	private _addPoint(p: Point) {
 		this._points.push(p);
 		if (this._points.length > 2) {
-			this._addNewTriangle(this._points[0], this._points[1],  this._points[2]);
+			this._addNewDrawing(this._points[0], this._points[1],  this._points[2]);
 			this.stopDrawing();
-			this._removePreviewTriangle();
+			this._removePreviewDrawing();
 		}
 		if (this._points.length === 1) {
-			this._addPreviewTriangle(this._points[0]);
+			this._addPreviewDrawing(this._points[0]);
 		}
 	}
 
-	private _addNewTriangle(p1: Point, p2: Point, p3: Point) {
-		const triangle = new Triangle([p1, p2, p3], { ...this._defaultOptions });
-		this._triangles.push(triangle);
-		ensureDefined(this._series).attachPrimitive(triangle);
+	private _addNewDrawing(p1: Point, p2: Point, p3: Point) {
+		const drawing = new Triangle([p1, p2, p3], { ...this._defaultOptions });
+		this._drawings.push(drawing);
+		ensureDefined(this._series).attachPrimitive(drawing);
 	}
 
-	private _removeTriangle(triangle: Triangle) {
-		ensureDefined(this._series).detachPrimitive(triangle);
+	private _removeDrawing(drawing: Triangle) {
+		ensureDefined(this._series).detachPrimitive(drawing);
 	}
 
-	private _addPreviewTriangle(p: Point) {
-		this._previewTriangle = new PreviewTriangle([p], {
+	private _addPreviewDrawing(p: Point) {
+		this._previewDrawing = new PreviewTriangle([p], {
 			...this._defaultOptions,
 		});
-		ensureDefined(this._series).attachPrimitive(this._previewTriangle);
+		ensureDefined(this._series).attachPrimitive(this._previewDrawing);
 	}
 
-	private _removePreviewTriangle() {
-		if (this._previewTriangle) {
-			ensureDefined(this._series).detachPrimitive(this._previewTriangle);
-			this._previewTriangle = undefined;
+	private _removePreviewDrawing() {
+		if (this._previewDrawing) {
+			ensureDefined(this._series).detachPrimitive(this._previewDrawing);
+			this._previewDrawing = undefined;
 		}
 	}
 }
