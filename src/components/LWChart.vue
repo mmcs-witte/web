@@ -29,6 +29,7 @@ import { FibSpiralDrawingTool } from '../plugins/drawings-plugin/fibonacci-spira
 import { CurveDrawingTool } from '../plugins/drawings-plugin/curve.ts';
 import { TimeLineDrawingTool } from '../plugins/drawings-plugin/time-line.ts';
 import { FibWedgeDrawingTool } from '../plugins/drawings-plugin/fibonacci-wedge.ts';
+import { PolylineDrawingTool } from '../plugins/drawings-plugin/polyline.ts';
 
 const props = defineProps({
 	type: {
@@ -114,7 +115,8 @@ const createDrawingTools = (chart, series) => {
     "fibonacci_spiral": new FibSpiralDrawingTool(chart, series),
     "curve": new CurveDrawingTool(chart, series),
     "trend_line": new TrendLineDrawingTool(chart, series),
-    "time_line": new TimeLineDrawingTool(chart, series),
+    "time_line": new PolylineDrawingTool(chart, series),
+    //"time_line": new TimeLineDrawingTool(chart, series),
     // "fibonacci_wedge": new FibWedgeDrawingTool(chart, series), 
   }
   

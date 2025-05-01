@@ -102,7 +102,7 @@ class TrianglePaneView implements IPrimitivePaneView {
 
 	renderer() {
 		const n: number = this._source._numPointsToUse;
-    let points: ViewPoint[] = [];
+    const points: ViewPoint[] = [];
     for (let i: number = 0; i < n; i++) {
       points.push(i == 0 ? this._p1 : i == 1 ? this._p2 : this._p3);
     } 
