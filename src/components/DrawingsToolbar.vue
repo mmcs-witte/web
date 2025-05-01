@@ -36,6 +36,30 @@ const selectDrawing = (drawingType: DrawingType) => {
     >
       <FontAwesomeIcon :icon="['fas', 'cat']" size="2x" />
     </button>
+    <button 
+      class="hover:bg-gray-700 aspect-square rounded-md p-2 flex items-center justify-around duration-100 ease-linear"
+      @click="selectDrawing(DrawingType.FibonacciSpiral)"  
+    >
+      <FontAwesomeIcon :icon="['fas', 'cat']" size="2x" />
+    </button>
+    <button 
+      class="hover:bg-gray-700 aspect-square rounded-md p-2 flex items-center justify-around duration-100 ease-linear"
+      @click="selectDrawing(DrawingType.Curve)"  
+    >
+      <FontAwesomeIcon :icon="['fas', 'cat']" size="2x" />
+    </button>
+    <button 
+      class="hover:bg-gray-700 aspect-square rounded-md p-2 flex items-center justify-around duration-100 ease-linear"
+      @click="selectDrawing(DrawingType.TrendLine)"  
+    >
+      <FontAwesomeIcon :icon="['fas', 'cat']" size="2x" />
+    </button>
+    <button 
+      class="hover:bg-gray-700 aspect-square rounded-md p-2 flex items-center justify-around duration-100 ease-linear"
+      @click="selectDrawing(DrawingType.TimeLine)"  
+    >
+      <FontAwesomeIcon :icon="['fas', 'cat']" size="2x" />
+    </button>
   </nav>
   <div class="text-sm text-gray-200">
     <span class="p-2">v0.2.0</span>

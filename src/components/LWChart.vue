@@ -15,7 +15,7 @@ import {
 	BaselineSeries,
 } from 'lightweight-charts';
 import { AnchoredText } from "../plugins/anchored-text/anchored-text.ts";
-import { TrendLine } from '../plugins/drawings-plugin/trend-line.ts';
+import { TrendLine, TrendLineDrawingTool } from '../plugins/drawings-plugin/trend-line-tool.ts';
 import { RectangleDrawingTool } from '../plugins/drawings-plugin/rectangle-drawing-tool.ts';
 import { TriangleDrawingTool } from '../plugins/drawings-plugin/triangle-drawing-tool.ts';
 import { FibChannelDrawingTool } from '../plugins/drawings-plugin/fibonacci-channel-drawing-tool.ts';
@@ -27,6 +27,7 @@ import { BandsIndicator } from '../plugins/indicators-plugin/bands-indicator.ts'
 import { SMAIndicator } from '../plugins/indicators-plugin/simple-moving-average-indicator.ts'
 import { FibSpiralDrawingTool } from '../plugins/drawings-plugin/fibonacci-spiral-drawing-tool.ts';
 import { CurveDrawingTool } from '../plugins/drawings-plugin/curve-drawing-tool.ts';
+import { TimeLineDrawingTool } from '../plugins/drawings-plugin/time-line-tool.ts';
 
 const props = defineProps({
 	type: {
@@ -108,8 +109,11 @@ const createDrawingTools = (chart, series) => {
   let drawingTools = {
     "rectangle": new RectangleDrawingTool(chart, series),
     "triangle": new TriangleDrawingTool(chart, series),
-    "fibonacci_channel": new CurveDrawingTool(chart, series),
-    //"fibonacci_spiral": new FibSpiralDrawingTool(chart, series),
+    "fibonacci_channel": new FibChannelDrawingTool(chart, series),
+    "fibonacci_spiral": new FibSpiralDrawingTool(chart, series),
+    "curve": new CurveDrawingTool(chart, series),
+    "trend_line": new TrendLineDrawingTool(chart, series),
+    "time_line": new TimeLineDrawingTool(chart, series),
   }
 
   for (let tool in drawingTools) {
@@ -124,7 +128,6 @@ let selectedDrawingTool = ref(DrawingType.Arrow)
 drawingStore.$subscribe((mutation, store) => {
   if (store.currentDrawing === DrawingType.Arrow) return
   selectedDrawingTool.value = getDrawingTool(store.currentDrawing)
-
   selectedDrawingTool.value.startDrawing()
   drawingStore.currentDrawing = DrawingType.Arrow
 })
@@ -138,35 +141,6 @@ const createTrendLine = (chart, series, point1, point2, width) => {
 	  labelTextColor: 'orange',
 	});
   series.attachPrimitive(trendLine);
-};
-
-const createRectangleDrawingTool = (chart, series, ) => {
-  const rectDrawing = new RectangleDrawingTool(chart, series, 
-  );
-  series.attachPrimitive(rectDrawing);
-  rectDrawing.startDrawing();
-};
-
-const createFibChannelDrawingTool = (chart, series, ) => {
-  const fibChannelDrawing = new FibChannelDrawingTool(chart, series, 
-	  null,
-    null
-  );
-  series.attachPrimitive(fibChannelDrawing);
-  fibChannelDrawing.startDrawing();
-};
-
-const createTriangleDrawingTool = (chart, series) => {
-  const triangle = new TriangleDrawingTool(
-	  chart,
-	  series,
-	  null,
-	  {
-	  	showLabels: false,
-	  }
-  );
-  series.attachPrimitive(triangle);
-  triangle.startDrawing();
 };
 
 const createVolumeProfile = (chart, series, data) => {
@@ -207,22 +181,9 @@ const addSeriesAndData = props => {
 	series = chart.addSeries(seriesDefinition, props.seriesOptions);
 	series.setData(props.data);
 
-
   drawingTools = createDrawingTools(chart, series)
-
-  // const bandIndicator = new BandsIndicator();
-  // series.attachPrimitive(bandIndicator);
-
   // const smaIndicator = new SMAIndicator();
   // series.attachPrimitive(smaIndicator);
-
-  //createTrendLine(chart, series, point1, point2, 10);
-  //createTriangleDrawingTool(chart, series);
-  //createRectangleDrawingTool(chart, series);
-  //createVolumeProfile(chart, series, props.data);
-  //createAnchoredText(chart, series);
-  //createFibChannelDrawingTool(chart, series);
-  //createFibSprialDrawingTool(chart, series);
 };
 
 onMounted(() => {
