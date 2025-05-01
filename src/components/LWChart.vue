@@ -15,19 +15,20 @@ import {
 	BaselineSeries,
 } from 'lightweight-charts';
 import { AnchoredText } from "../plugins/anchored-text/anchored-text.ts";
-import { TrendLine, TrendLineDrawingTool } from '../plugins/drawings-plugin/trend-line-tool.ts';
-import { RectangleDrawingTool } from '../plugins/drawings-plugin/rectangle-drawing-tool.ts';
-import { TriangleDrawingTool } from '../plugins/drawings-plugin/triangle-drawing-tool.ts';
-import { FibChannelDrawingTool } from '../plugins/drawings-plugin/fibonacci-channel-drawing-tool.ts';
+import { TrendLine, TrendLineDrawingTool } from '../plugins/drawings-plugin/trend-line.ts';
+import { RectangleDrawingTool } from '../plugins/drawings-plugin/rectangle.ts';
+import { TriangleDrawingTool } from '../plugins/drawings-plugin/triangle.ts';
+import { FibChannelDrawingTool } from '../plugins/drawings-plugin/fibonacci-channel.ts';
 
 import { VolumeProfile } from '../plugins/volume-profile/volume-profile.ts';
 import { useDrawingsStore } from '../stores/drawings.ts';
 import { DrawingType } from '../types/drawings.ts';
 import { BandsIndicator } from '../plugins/indicators-plugin/bands-indicator.ts'
 import { SMAIndicator } from '../plugins/indicators-plugin/simple-moving-average-indicator.ts'
-import { FibSpiralDrawingTool } from '../plugins/drawings-plugin/fibonacci-spiral-drawing-tool.ts';
-import { CurveDrawingTool } from '../plugins/drawings-plugin/curve-drawing-tool.ts';
-import { TimeLineDrawingTool } from '../plugins/drawings-plugin/time-line-tool.ts';
+import { FibSpiralDrawingTool } from '../plugins/drawings-plugin/fibonacci-spiral.ts';
+import { CurveDrawingTool } from '../plugins/drawings-plugin/curve.ts';
+import { TimeLineDrawingTool } from '../plugins/drawings-plugin/time-line.ts';
+import { FibWedgeDrawingTool } from '../plugins/drawings-plugin/fibonacci-wedge.ts';
 
 const props = defineProps({
 	type: {
@@ -114,8 +115,9 @@ const createDrawingTools = (chart, series) => {
     "curve": new CurveDrawingTool(chart, series),
     "trend_line": new TrendLineDrawingTool(chart, series),
     "time_line": new TimeLineDrawingTool(chart, series),
+    // "fibonacci_wedge": new FibWedgeDrawingTool(chart, series), 
   }
-
+  
   for (let tool in drawingTools) {
     series.attachPrimitive(tool);
   }
