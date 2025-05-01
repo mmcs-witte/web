@@ -80,7 +80,7 @@ function getChartSeriesDefinition(type) {
 function getChartIndicatorsDefinition(type) {
 	switch (type.toLowerCase()) {
 		case 'sma':
-			return SMAIndicator;
+			return new SMAIndicator();
 	}
 }
 
@@ -162,8 +162,9 @@ indicatorsStore.$subscribe((mutation, store) => {
 })
 
 const addIndicator = (indicatorType) => {
-  const indicator = new getChartIndicatorsDefinition(indicatorType);
+  const indicator = getChartIndicatorsDefinition(indicatorType);
   series.attachPrimitive(indicator);
+  chart.timeScale().fitContent(); 
 }
 
 const createTrendLine = (chart, series, point1, point2, width) => {
