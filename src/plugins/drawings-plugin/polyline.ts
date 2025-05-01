@@ -460,9 +460,9 @@ export class PolylineDrawingTool {
     const newPoint: Point = { time: param.time, price };
 		this._addPoint(newPoint);
 
-    this.stopDrawing();
     this._removePreviewDrawing();
     this._addNewDrawing(this._points);
+    this.stopDrawing();
 	}
 
 	private _onMouseMove(param: MouseEventParams) {
