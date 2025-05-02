@@ -5,7 +5,9 @@ import {
   faHome,
   faCog,
   faPalette,
-  faRuler
+  faCat,
+  faRuler,
+  faArrowPointer
 } from '@fortawesome/free-solid-svg-icons'
 import {
   faUser as farUser,
@@ -21,8 +23,10 @@ library.add(
   faUser,
   faHome,
   faCog,
+  faCat,
   faPalette,
   faRuler,
+  faArrowPointer,
   farUser,
   farClock,
   fabGithub,

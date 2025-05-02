@@ -6,7 +6,9 @@
     { "path": "./vendor/lw-charts/tsconfig.json" }
   ],
   "compilerOptions": {
+    "baseUrl": "./",
     "paths": {
+      "@/*": ["src/*"],
       "lightweight-charts": ["./vendor/lw-charts/src"],
     }
   },
