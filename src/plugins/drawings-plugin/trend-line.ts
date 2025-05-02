@@ -462,7 +462,7 @@ export class TrendLineDrawingTool {
 
   private _addPoint(p: Point) {
     this._points.push(p);
-    if (this._points.length > 2) {
+    if (this._points.length > 1) {
       this._addNewTrendLine(this._points[0], this._points[1]);
       this.stopDrawing();
       this._removePreviewTrendline();

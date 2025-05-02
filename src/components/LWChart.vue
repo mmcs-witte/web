@@ -23,8 +23,8 @@ import { FibChannelDrawingTool } from '../plugins/drawings-plugin/fibonacci-chan
 import { VolumeProfile } from '../plugins/volume-profile/volume-profile.ts';
 import { useDrawingsStore } from '../stores/drawings.ts';
 import { DrawingType } from '../types/drawings.ts';
-import { BandsIndicator } from '../plugins/indicators-plugin/bands-indicator.ts'
-import { SMAIndicator } from '../plugins/indicators-plugin/simple-moving-average-indicator.ts'
+import { BandsIndicator } from '../plugins/indicators-plugin/bollinger-bands.ts'
+import { SMAIndicator } from '../plugins/indicators-plugin/simple-moving-average.ts'
 import { FibSpiralDrawingTool } from '../plugins/drawings-plugin/fibonacci-spiral.ts';
 import { CurveDrawingTool } from '../plugins/drawings-plugin/curve.ts';
 import { TimeLineDrawingTool } from '../plugins/drawings-plugin/time-line.ts';
