@@ -1,4 +1,4 @@
-<script setup>
+<script setup lang="ts">
 // This starter template is using Vue 3 <script setup> SFCs
 // Check out https://vuejs.org/api/sfc-script-setup.html#script-setup
 import { ref } from 'vue';
@@ -14,15 +14,63 @@ import {
  */
 import LWChart from "./LWChart.vue";
 import { useChartStore } from "@/stores/chart";
+import axios from 'axios';
 
 const chartStore = useChartStore();
+
+interface BinanceKlinesResponseData {
+  openTime: number,
+  openPrice: string,
+  highPrice: string,
+  lowPrice: string,
+  closePrice: string,
+  volume: string,
+  closeTime: number,
+  quoteAssetVolume: string
+  numberOfTrades: number
+  takerBuyBaseAssetVolume: string,
+  takerButQuoteAssetVolume: string,
+  unused: string
+}
+
+function getBinanceData(ohlc: boolean, symbol: string, interval: string, limit: number = 500) {
+  axios.get("https://api.binance.com/api/v3/klines", {
+    params: {
+      symbol,
+      interval,
+      limit
+    }
+  }).then(response => {
+    let res;
+    if (ohlc) {
+      res = response.data.map((kline) => ({
+        time: kline[0] / 1000,
+        low: parseFloat(kline[3]),
+        high: parseFloat(kline[2]),
+        open: parseFloat(kline[1]),
+        close: parseFloat(kline[4]),
+      }))
+    } else {
+      res = response.data.map((kline) => ({
+        time: kline[0] / 1000,
+        value: parseFloat(kline[4])
+      }))
+    }
+    console.log("RESULT", res)
+    data.value = res
+  }).catch(error => {
+    console.log("ERROR", error)
+    const res = generateSampleData(ohlc)
+    data.value = res
+  })
+}
 
 /**
  * Generates sample data for the Lightweight Charts™ example
  * @param  {Boolean} ohlc Whether generated dat should include open, high, low, and close values
  * @returns {Array} sample data
  */
-function generateSampleData(ohlc) {
+function generateSampleData(ohlc = true) {
   const randomFactor = 25 + Math.random() * 25;
   function samplePoint(i) {
     return (
@@ -94,7 +142,10 @@ const chartOptions = ref({
     }
   },
   });
-const data = ref(generateSampleData(false));
+
+const data = ref([]);
+
+console.log("data.value", data.value)
 // Setting series options manually
 // TODO: set it from code later
 const seriesOptions = ref({
@@ -164,8 +215,9 @@ const changeColors = () => {
 
 const changeData = () => {
   const candlestickTypeData = ['candlestick', 'bar'].includes(chartType.value);
-  const newData = generateSampleData(candlestickTypeData);
-  data.value = newData;
+  getBinanceData(candlestickTypeData, "BTCUSDT", "1d", 500);
+  const newData = data.value
+  // data.value = newData;
   if (chartType.value === 'baseline') {
     const average =
       newData.reduce((s, c) => {
