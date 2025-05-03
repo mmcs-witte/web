@@ -18,6 +18,7 @@ import type {
 import { ensureDefined } from '../../helpers/assertions.ts';
 import { PluginBase } from '../plugin-base.ts';
 import { positionsBox } from '../../helpers/dimensions/positions.ts';
+import type { Point, ViewPoint } from './drawing-base.ts';
 
 class TrianglePaneRenderer implements IPrimitivePaneRenderer {
 	_points: ViewPoint[];
@@ -68,11 +69,6 @@ class TrianglePaneRenderer implements IPrimitivePaneRenderer {
 			}
 		});
 	}
-}
-
-interface ViewPoint {
-	x: Coordinate | null;
-	y: Coordinate | null;
 }
 
 class TrianglePaneView implements IPrimitivePaneView {
@@ -265,10 +261,6 @@ class TrianglePriceAxisView extends TriangleAxisView {
 	}
 }
 
-interface Point {
-	time: Time;
-	price: number;
-}
 
 export interface TriangleDrawingToolOptions {
 	fillColor: string;

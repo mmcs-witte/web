@@ -14,6 +14,7 @@ import type {
 import { ensureDefined } from '../../helpers/assertions.ts';
 import { PluginBase } from '../plugin-base.ts';
 import { positionsLine } from '../../helpers/dimensions/positions.ts';
+import type { Point } from './drawing-base.ts';
 
 class TimeLinePaneRenderer implements IPrimitivePaneRenderer {
 	_x: Coordinate | null = null;
@@ -52,7 +53,7 @@ class TimeLinePaneView implements IPrimitivePaneView {
 		this._options = options;
 	}
 	update() {
-		const timeScale = this._source._chart.timeScale();
+		const timeScale = this._source.chart().timeScale();
 		this._x = timeScale.timeToCoordinate(this._source._p1.time);
 	}
 	renderer() {
@@ -70,7 +71,7 @@ class TimeLineTimeAxisView implements ISeriesPrimitiveAxisView {
 		this._options = options;
 	}
 	update() {
-		const timeScale = this._source._chart.timeScale();
+		const timeScale = this._source.chart().timeScale();
 		this._x = timeScale.timeToCoordinate(this._source._p1.time);
 	}
 	visible() {
@@ -92,10 +93,7 @@ class TimeLineTimeAxisView implements ISeriesPrimitiveAxisView {
 		return this._options.labelBackgroundColor;
 	}
 }
-interface Point {
-  time: Time;
-  price: number;
-}
+
 
 export interface TimeLineOptions {
 	color: string;

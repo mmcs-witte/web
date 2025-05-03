@@ -10,16 +10,17 @@ import type {
 	ISeriesPrimitiveAxisView,
 	IPrimitivePaneRenderer,
 	IPrimitivePaneView,
-	MouseEventParams,
 	PrimitivePaneViewZOrder,
 	SeriesType,
 	Time,
+  PrimitiveHoveredItem,
 } from 'lightweight-charts';
-import { ensureDefined } from '../../helpers/assertions.ts';
-import { PluginBase } from '../plugin-base.ts';
 import { positionsBox } from '../../helpers/dimensions/positions.ts';
-import { Point as Point2D } from '@flatten-js/core';
+import { point, Point as Point2D } from '@flatten-js/core';
 import { Vector as Vector2D } from '@flatten-js/core';
+import { Segment } from '@flatten-js/core';
+import { DrawingToolBase, DrawingBase } from './drawing-base.ts';
+import type { Point, ViewPoint } from './drawing-base.ts';
 
 export interface ClassicArrowRenderInfo {
   arrowWing1: Point2D;
@@ -61,7 +62,10 @@ class PolylinePaneRenderer implements IPrimitivePaneRenderer {
 	_fillColor: string;
 
 	constructor(points: ViewPoint[], fillColor: string) {
-		this._points = points;
+		this._points = new Array<ViewPoint>(points.length);
+    for (let i = 0; i < points.length; i++) {
+      this._points[i] = points[i];
+    }
 		this._fillColor = fillColor;
 	}
 
@@ -106,12 +110,34 @@ class PolylinePaneRenderer implements IPrimitivePaneRenderer {
       // ctx.stroke();
 		});
 	}
+
+  hitTest(x: number, y: number): PrimitiveHoveredItem | null {
+    //return null;
+    if (this._points.length < 2) {
+      return;
+    }
+    
+    let minDist = Infinity;
+    const epsilon: number = 3e-0;
+    for (let i = 1; i < this._points.length; i++) {
+      const s0: Point2D = new Point2D(this._points[i].x, this._points[i].y);
+      const s1: Point2D = new Point2D(this._points[i - 1].x, this._points[i - 1].y);
+      const segment: Segment = new Segment(s0, s1);
+      minDist = Math.min(segment.distanceTo(new Point2D(x, y))[0], minDist);
+    }
+
+    if (minDist > epsilon) {
+      return null;
+    }
+
+    return {
+			cursorStyle: "grab",
+			externalId: 'polyline-drawing',
+			zOrder: 'top',
+		};
+  }
 }
 
-interface ViewPoint {
-	x: Coordinate | null;
-	y: Coordinate | null;
-}
 
 class PolylinePaneView implements IPrimitivePaneView {
 	_source: Polyline;
@@ -288,11 +314,6 @@ class PolylinePriceAxisView extends PolylineAxisView {
 	}
 }
 
-interface Point {
-	time: Time;
-	price: number;
-}
-
 export interface PolylineDrawingToolOptions {
 	fillColor: string;
 	previewFillColor: string;
@@ -325,31 +346,23 @@ interface DrawingBounds {
   _minPrice: number;
   _maxPrice: number;
 }
-class Polyline extends PluginBase {
-	_options: PolylineDrawingToolOptions;
-	_points: Point[];
+
+class Polyline extends DrawingBase<PolylineDrawingToolOptions> {
   _bounds: DrawingBounds;
 	_paneViews: PolylinePaneView[];
 	 _timeAxisViews: PolylineTimeAxisView[];
 	_priceAxisViews: PolylinePriceAxisView[];
-	// _priceAxisPaneViews: PolylinePriceAxisPaneView[];
-	// _timeAxisPaneViews: PolylineTimeAxisPaneView[];
 
 	constructor(
 		points: Point[],
 		options: Partial<PolylineDrawingToolOptions> = {}
 	) {
-		super();
+		super(points, defaultOptions, options);
     
     this._bounds =  {_minTime: 0, _maxTime: 0, _minPrice: 0, _maxPrice: 0};
-    this._points = points;
     this._points.forEach((point) => {
       this._updateDrawingBounds(point);
     })
-		this._options = {
-			...defaultOptions,
-			...options,
-		};
 		this._paneViews = [new PolylinePaneView(this)];
 		this._timeAxisViews = [new PolylineTimeAxisView(this)];
 		this._priceAxisViews = [new PolylinePriceAxisView(this)];
@@ -358,13 +371,13 @@ class Polyline extends PluginBase {
 		// this._timeAxisPaneViews = [new PolylineTimeAxisPaneView(this, false)];
 	}
 
-  public addPoint(p: Point) {
+  public override addPoint(p: Point) {
     this._updateDrawingBounds(p);
     this._points.push(p);
     this.requestUpdate();
   }
 
-	public updatePoint(p: Point, index : number) {
+	public override updatePoint(p: Point, index : number) {
     if (index >= this._points.length || index < 0)
       return;
 
@@ -409,6 +422,13 @@ class Polyline extends PluginBase {
 		this.requestUpdate();
 	}
 
+  hitTest(x: number, y: number): PrimitiveHoveredItem | null {
+		if (this._paneViews.length > 0) {
+			return this._paneViews[0].renderer()?.hitTest(x, y) ?? null;
+		}
+		return null;
+  }
+
   private _updateDrawingBounds(point: Point) {
     this._bounds._minPrice = Math.min(this._bounds._minPrice, point.price);
     this._bounds._maxPrice = Math.max(this._bounds._maxPrice, point.price);
@@ -428,135 +448,16 @@ class PreviewPolyline extends Polyline {
 	}
 }
 
-export class PolylineDrawingTool {
-	private _chart: IChartApi | undefined;
-	private _series: ISeriesApi<SeriesType> | undefined;
-	private _defaultOptions: Partial<PolylineDrawingToolOptions>;
-	private _drawings: Polyline[];
-	private _previewDrawing: PreviewPolyline | undefined = undefined;
-	private _points: Point[] = [];
-	private _drawing: boolean = false;
-
+export class PolylineDrawingTool extends DrawingToolBase<
+DrawingBase<PolylineDrawingToolOptions>, 
+DrawingBase<PolylineDrawingToolOptions>, 
+PolylineDrawingToolOptions>
+{
 	constructor(
 		chart: IChartApi,
 		series: ISeriesApi<SeriesType>,
 		options: Partial<PolylineDrawingToolOptions>
 	) {
-		this._chart = chart;
-		this._series = series;
-		this._defaultOptions = options;
-		this._drawings = [];
-		this._chart.subscribeClick(this._clickHandler);
-		this._chart.subscribeDblClick(this._dblClickHandler);
-		this._chart.subscribeCrosshairMove(this._moveHandler);
-	}
-
-	private _clickHandler = (param: MouseEventParams) => this._onClick(param);
-	private _dblClickHandler = (param: MouseEventParams) => this._onDblClick(param);
-	private _moveHandler = (param: MouseEventParams) => this._onMouseMove(param);
-
-	remove() {
-		this.stopDrawing();
-		if (this._chart) {
-			this._chart.unsubscribeClick(this._clickHandler);
-			this._chart.unsubscribeDblClick(this._dblClickHandler);
-			this._chart.unsubscribeCrosshairMove(this._moveHandler);
-		}
-		this._drawings.forEach(Polyline => {
-			this._removeDrawing(Polyline);
-		});
-		this._drawings = [];
-		this._removePreviewDrawing();
-		this._chart = undefined;
-		this._series = undefined;
-	}
-
-	startDrawing(): void {
-		this._drawing = true;
-		this._points = [];
-	}
-
-	stopDrawing(): void {
-		this._drawing = false;
-		this._points = [];
-	}
-
-	isDrawing(): boolean {
-		return this._drawing;
-	}
-
-	private _onClick(param: MouseEventParams) {
-		if (!this._drawing || !param.point || !param.time || !this._series) return;
-		const price = this._series.coordinateToPrice(param.point.y);
-		if (price === null) {
-			return;
-		}
-
-    const newPoint: Point = { time: param.time, price };
-
-    this._addPoint(newPoint);
-
-    if (this._previewDrawing == null) {
-      this._addPoint(newPoint);
-      this._addPreviewDrawing(this._points);
-    }
-	}
-
-  private _onDblClick(param: MouseEventParams) {
-		if (!this._drawing || !param.point || !param.time || !this._series) return;
-		const price = this._series.coordinateToPrice(param.point.y);
-		if (price === null) {
-			return;
-		}
-
-    const newPoint: Point = { time: param.time, price };
-		this._addPoint(newPoint);
-
-    this._removePreviewDrawing();
-    this._addNewDrawing(this._points);
-    this.stopDrawing();
-	}
-
-	private _onMouseMove(param: MouseEventParams) {
-		if (!this._drawing || !param.point || !param.time || !this._series) return;
-		const price = this._series.coordinateToPrice(param.point.y);
-		if (price === null) {
-			return;
-		}
-
-    const newPoint: Point = { time: param.time, price };
-		const lastPointIndex = this._points.length - 1;
-
-		if (this._previewDrawing) {
-			this._previewDrawing.updatePoint(newPoint, lastPointIndex);
-		}
-	}
-
-	private _addPoint(p: Point) {
-		this._points.push(p);
-	}
-
-	private _addNewDrawing(points: Point[]) {
-		const drawing = new Polyline(points, { ...this._defaultOptions });
-		this._drawings.push(drawing);
-		ensureDefined(this._series).attachPrimitive(drawing);
-	}
-
-	private _removeDrawing(drawing: Polyline) {
-		ensureDefined(this._series).detachPrimitive(drawing);
-	}
-
-	private _addPreviewDrawing(points: Point[]) {
-		this._previewDrawing = new PreviewPolyline(points, {
-			...this._defaultOptions,
-		});
-		ensureDefined(this._series).attachPrimitive(this._previewDrawing);
-	}
-
-	private _removePreviewDrawing() {
-		if (this._previewDrawing) {
-			ensureDefined(this._series).detachPrimitive(this._previewDrawing);
-			this._previewDrawing = undefined;
-		}
+    super(Polyline, PreviewPolyline, chart, series, defaultOptions, options);
 	}
 }

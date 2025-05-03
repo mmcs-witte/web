@@ -17,6 +17,7 @@ import { isBusinessDay } from  'lightweight-charts';
 import { ensureDefined } from '../../helpers/assertions.ts';
 import { PluginBase } from '../plugin-base.ts';
 import { positionsBox } from '../../helpers/dimensions/positions.ts';
+import type { Point, ViewPoint } from './drawing-base.ts';
 
 class TrendLinePaneRenderer implements IPrimitivePaneRenderer {
 	_p1: ViewPoint;
@@ -216,11 +217,6 @@ class RectanglePriceAxisView extends TrendLineAxisView {
   }
 }
 
-interface ViewPoint {
-	x: Coordinate | null;
-	y: Coordinate | null;
-}
-
 class TrendLinePaneView implements IPrimitivePaneView {
 	_source: TrendLine;
 	_p1: ViewPoint = { x: null, y: null };
@@ -252,10 +248,6 @@ class TrendLinePaneView implements IPrimitivePaneView {
 	}
 }
 
-interface Point {
-	time: Time;
-	price: number;
-}
 
 export interface TrendLineOptions {
 	lineColor: string;

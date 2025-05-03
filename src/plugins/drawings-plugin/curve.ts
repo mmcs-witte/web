@@ -19,6 +19,7 @@ import { PluginBase } from '../plugin-base.ts';
 import { positionsBox } from '../../helpers/dimensions/positions.ts';
 import { Point as Point2D } from '@flatten-js/core';
 import { Vector as Vector2D } from '@flatten-js/core';
+import type { Point, ViewPoint } from './drawing-base.ts';
 
 export interface BezierCurvesPointsInfo {
   endPoints: Point2D[];
@@ -146,11 +147,6 @@ class CurvePaneRenderer implements IPrimitivePaneRenderer {
 			}
 		});
 	}
-}
-
-interface ViewPoint {
-	x: Coordinate | null;
-	y: Coordinate | null;
 }
 
 class CurvePaneView implements IPrimitivePaneView {
@@ -341,11 +337,6 @@ class CurvePriceAxisView extends CurveAxisView {
 	text() {
 		return this._source._options.priceLabelFormatter(this._p.price);
 	}
-}
-
-interface Point {
-	time: Time;
-	price: number;
 }
 
 export interface CurveDrawingToolOptions {

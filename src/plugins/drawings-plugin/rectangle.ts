@@ -19,6 +19,8 @@ import {
 import { ensureDefined } from '../../helpers/assertions.ts';
 import { PluginBase } from '../plugin-base.ts';
 import { positionsBox } from '../../helpers/dimensions/positions.ts';
+import type { Point, ViewPoint } from './drawing-base.ts';
+
 
 class RectanglePaneRenderer implements IPrimitivePaneRenderer {
 	_p1: ViewPoint;
@@ -60,11 +62,6 @@ class RectanglePaneRenderer implements IPrimitivePaneRenderer {
 			);
 		});
 	}
-}
-
-interface ViewPoint {
-	x: Coordinate | null;
-	y: Coordinate | null;
 }
 
 class RectanglePaneView implements IPrimitivePaneView {
@@ -235,11 +232,6 @@ class RectanglePriceAxisView extends RectangleAxisView {
 	text() {
 		return this._source._options.priceLabelFormatter(this._p.price);
 	}
-}
-
-interface Point {
-	time: Time;
-	price: number;
 }
 
 export interface RectangleDrawingToolOptions {

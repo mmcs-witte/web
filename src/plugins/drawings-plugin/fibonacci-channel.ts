@@ -19,6 +19,7 @@ import {
 import { ensureDefined } from '../../helpers/assertions.ts';
 import { PluginBase } from '../plugin-base.ts';
 import { positionsBox } from '../../helpers/dimensions/positions.ts';
+import type { Point, ViewPoint } from './drawing-base.ts';
 
 class FibChannelPaneRenderer implements IPrimitivePaneRenderer {
 	_p1: ViewPoint;
@@ -102,11 +103,6 @@ class FibChannelPaneRenderer implements IPrimitivePaneRenderer {
       }
     });
   }
-}
-
-interface ViewPoint {
-	x: Coordinate | null;
-	y: Coordinate | null;
 }
 
 class FibChannelPaneView implements IPrimitivePaneView {
@@ -279,10 +275,6 @@ class RectanglePriceAxisView extends RectangleAxisView {
 	}
 }
 
-interface Point {
-	time: Time;
-	price: number;
-}
 
 export interface FibChannelDrawingToolOptions {
 	fillColor: string;

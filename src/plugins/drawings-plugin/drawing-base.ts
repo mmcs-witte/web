@@ -1,22 +1,28 @@
 
 import type {
+  Coordinate,
 	IChartApi,
 	ISeriesApi,
 	MouseEventParams,
 	SeriesType,
   Time,
+  PrimitiveHoveredItem,
 } from 'lightweight-charts';
 
 import { PluginBase } from '../plugin-base.ts';
-
 import { ensureDefined } from '../../helpers/assertions.ts';
 
-interface Point {
+export interface ViewPoint {
+	x: Coordinate | null;
+	y: Coordinate | null;
+}
+
+export interface Point {
 	time: Time;
 	price: number;
 }
 
-export class IDrawingBase<DrawingOptions> extends PluginBase {
+export class DrawingBase<DrawingOptions> extends PluginBase {
   _options: DrawingOptions;
   _points: Point[];
 
@@ -53,30 +59,30 @@ export class IDrawingBase<DrawingOptions> extends PluginBase {
     this.requestUpdate();
   }
 
-	// hitTest(x: number, y: number): PrimitiveHoveredItem | null {
-	// 	if (this._paneView) {
-	// 		return this._paneView.renderer()?.hitTest(x, y) ?? null;
-	// 	}
-	// 	return null;
-  // }
+	hitTest(x: number, y: number): PrimitiveHoveredItem | null {
+		// if (this._paneView) {
+		// 	return this._paneView.renderer()?.hitTest(x, y) ?? null;
+		// }
+		return null;
+  }
 }
 
-type DrawingConstructor<TOptions, TDrawing extends IDrawingBase<TOptions>> =
+export type DrawingConstructor<TOptions, TDrawing extends DrawingBase<TOptions>> =
   new (points: Point[], defaults: TOptions, options: Partial<TOptions>) => TDrawing;
 
 export class DrawingToolBase<
-  TDrawing extends IDrawingBase<TOptions>, 
-  TPreviewDrawing extends IDrawingBase<TOptions>,
+  TDrawing extends DrawingBase<TOptions>, 
+  TPreviewDrawing extends DrawingBase<TOptions>,
   TOptions,
   > {
-  private _chart: IChartApi | undefined;
-  private _series: ISeriesApi<SeriesType> | undefined;
-  private _defaultOptions: TOptions;
-  private _options: Partial<TOptions>;
-  private _drawings: TDrawing[];
-  private _previewDrawing: TPreviewDrawing | undefined = undefined;
-  private _points: Point[] = [];
-  private _drawing: boolean = false;
+  protected _chart: IChartApi | undefined;
+  protected _series: ISeriesApi<SeriesType> | undefined;
+  protected _defaultOptions: TOptions;
+  protected _options: Partial<TOptions>;
+  protected _drawings: TDrawing[];
+  protected _previewDrawing: TPreviewDrawing | undefined = undefined;
+  protected _points: Point[] = [];
+  protected _drawing: boolean = false;
 
   constructor(
     private DrawingClass: DrawingConstructor<TOptions, TDrawing>,
@@ -96,9 +102,9 @@ export class DrawingToolBase<
     this._chart.subscribeCrosshairMove(this._moveHandler);
   }
 
-  private _clickHandler = (param: MouseEventParams) => this._onClick(param);
-  private _dblClickHandler = (param: MouseEventParams) => this._onDblClick(param);
-  private _moveHandler = (param: MouseEventParams) => this._onMouseMove(param);
+  protected _clickHandler = (param: MouseEventParams) => this._onClick(param);
+  protected _dblClickHandler = (param: MouseEventParams) => this._onDblClick(param);
+  protected _moveHandler = (param: MouseEventParams) => this._onMouseMove(param);
 
   remove() {
     this.stopDrawing();
@@ -130,24 +136,21 @@ export class DrawingToolBase<
     return this._drawing;
   }
 
-  private _onClick(param: MouseEventParams) {
+  protected _onClick(param: MouseEventParams) {
     if (!this._drawing || !param.point || !param.time || !this._series) return;
     const price = this._series.coordinateToPrice(param.point.y);
     if (price === null) {
       return;
     }
-
     const newPoint: Point = { time: param.time, price };
-
     this._addPoint(newPoint);
-
     if (this._previewDrawing == null) {
       this._addPoint(newPoint);
       this._addPreviewDrawing(this._points);
     }
   }
 
-  private _onDblClick(param: MouseEventParams) {
+  protected _onDblClick(param: MouseEventParams) {
     if (!this._drawing || !param.point || !param.time || !this._series) return;
     const price = this._series.coordinateToPrice(param.point.y);
     if (price === null) {
@@ -162,7 +165,7 @@ export class DrawingToolBase<
     this.stopDrawing();
   }
 
-  private _onMouseMove(param: MouseEventParams) {
+  protected _onMouseMove(param: MouseEventParams) {
     if (!this._drawing || !param.point || !param.time || !this._series) return;
     const price = this._series.coordinateToPrice(param.point.y);
     if (price === null) {
@@ -177,11 +180,11 @@ export class DrawingToolBase<
     }
   }
 
-  private _addPoint(p: Point) {
+  protected _addPoint(p: Point) {
     this._points.push(p);
   }
 
-  private _addNewDrawing(points: Point[]) {
+  protected _addNewDrawing(points: Point[]) {
     const drawing = new this.DrawingClass(
       points,
       this._defaultOptions,
@@ -191,11 +194,11 @@ export class DrawingToolBase<
     ensureDefined(this._series).attachPrimitive(drawing);
   }
 
-  private _removeDrawing(drawing: TDrawing) {
+  protected _removeDrawing(drawing: TDrawing) {
     ensureDefined(this._series).detachPrimitive(drawing);
   }
 
-  private _addPreviewDrawing(points: Point[]) {
+  protected _addPreviewDrawing(points: Point[]) {
     this._previewDrawing = new this.PreviewDrawingClass(
       points,
       this._defaultOptions,
@@ -204,7 +207,7 @@ export class DrawingToolBase<
     ensureDefined(this._series).attachPrimitive(this._previewDrawing);
   }
 
-  private _removePreviewDrawing() {
+  protected _removePreviewDrawing() {
     if (this._previewDrawing) {
       ensureDefined(this._series).detachPrimitive(this._previewDrawing);
       this._previewDrawing = undefined;
