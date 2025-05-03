@@ -538,12 +538,12 @@ export class CurveDrawingTool extends DrawingToolBase<
       this._removePreviewDrawing();
       this._addNewDrawing(this._points);
       this.stopDrawing();
-    }
-    
-    this._addPoint(newPoint);
-    if (this._previewDrawing == null) {
+    } else {
       this._addPoint(newPoint);
-      this._addPreviewDrawing(this._points);
+      if (this._previewDrawing == null) {
+        this._addPoint(newPoint);
+        this._addPreviewDrawing(this._points);
+      }
     }
 	}
 }
