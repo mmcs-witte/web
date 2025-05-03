@@ -151,18 +151,7 @@ export class DrawingToolBase<
   }
 
   protected _onDblClick(param: MouseEventParams) {
-    if (!this._drawing || !param.point || !param.time || !this._series) return;
-    const price = this._series.coordinateToPrice(param.point.y);
-    if (price === null) {
-      return;
-    }
-
-    const newPoint: Point = { time: param.time, price };
-    this._addPoint(newPoint);
-
-    this._removePreviewDrawing();
-    this._addNewDrawing(this._points);
-    this.stopDrawing();
+    return;
   }
 
   protected _onMouseMove(param: MouseEventParams) {

@@ -11,6 +11,7 @@ import type {
 	IPrimitivePaneRenderer,
 	IPrimitivePaneView,
 	PrimitivePaneViewZOrder,
+  MouseEventParams,
 	SeriesType,
 	Time,
   PrimitiveHoveredItem,
@@ -76,7 +77,6 @@ class PolylinePaneRenderer implements IPrimitivePaneRenderer {
 			}
 			
       const ctx = scope.context;
-
       const calculateDrawingPoint = (point: ViewPoint): ViewPoint =>  {
         return { 
           x : Math.round(point.x * scope.horizontalPixelRatio),
@@ -112,7 +112,6 @@ class PolylinePaneRenderer implements IPrimitivePaneRenderer {
 	}
 
   hitTest(x: number, y: number): PrimitiveHoveredItem | null {
-    //return null;
     if (this._points.length < 2) {
       return;
     }
@@ -460,4 +459,19 @@ PolylineDrawingToolOptions>
 	) {
     super(Polyline, PreviewPolyline, chart, series, defaultOptions, options);
 	}
+
+  protected override _onDblClick(param: MouseEventParams) {
+    if (!this._drawing || !param.point || !param.time || !this._series) return;
+    const price = this._series.coordinateToPrice(param.point.y);
+    if (price === null) {
+      return;
+    }
+
+    const newPoint: Point = { time: param.time, price };
+    this._addPoint(newPoint);
+
+    this._removePreviewDrawing();
+    this._addNewDrawing(this._points);
+    this.stopDrawing();
+  }
 }
