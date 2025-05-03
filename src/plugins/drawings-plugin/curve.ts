@@ -29,10 +29,10 @@ export interface BezierCurvesPointsInfo {
   controlPoints2: Point2D[];
 };
 
-export function quadraticBezierHitTest(p1: Point2D, p2: Point2D, p3: Point2D, point: Point2D, tolerance: number): boolean {
+export function quadraticBezierHitTest(p1: Point2D, p2: Point2D, controlPoint: Point2D, point: Point2D, tolerance: number): boolean {
   const maxHitTestSegments = 200;
 
-  const len: number = p3.distanceTo(p1)[0] + p3.distanceTo(p2)[0];
+  const len: number = controlPoint.distanceTo(p1)[0] + controlPoint.distanceTo(p2)[0];
   const step = Math.max(3 / len, 1 / maxHitTestSegments);
   for (let t = 0; t <= 1; t += step) {
     if (t > 1) {
@@ -43,7 +43,7 @@ export function quadraticBezierHitTest(p1: Point2D, p2: Point2D, p3: Point2D, po
     // P1 = p3
     // P2 = p2
     const s1 = p1.scale((1 - t) * (1 - t), (1 - t) * (1 - t));
-    const s2 = p3.scale(2 * t * (1 - t), 2 * t * (1 - t));
+    const s2 = controlPoint.scale(2 * t * (1 - t), 2 * t * (1 - t));
     const s3 = p2.scale(t * t, t * t);
     const currPointOnCurve = new Point2D(s1.x + s2.x + s3.x, s1.y + s2.y + s3.y);
     if (currPointOnCurve.distanceTo(point)[0] < tolerance)
@@ -56,11 +56,11 @@ export function quadraticBezierHitTest(p1: Point2D, p2: Point2D, p3: Point2D, po
 }
 
 	// @details Fill cubic Bezier curve points for a curve connecting point1, point2, point3
-export function getCubicBezierCurveDrawingPoints(point1: Point2D, point2: Point2D, point3: Point2D): BezierCurvesPointsInfo
+export function getCubicBezierCurveDrawingPoints(vertex1: Point2D, apex: Point2D, vertex2: Point2D): BezierCurvesPointsInfo
 	{
-    const p1 = new Vector2D(point1.x, point1.y);
-    const p2 = new Vector2D(point2.x, point2.y);
-    const p3 = new Vector2D(point3.x, point3.y);
+    const p1 = new Vector2D(vertex1.x, vertex1.y);
+    const p2 = new Vector2D(apex.x, apex.y);
+    const p3 = new Vector2D(vertex2.x, vertex2.y);
 
 		const dir: Vector2D = p1.subtract(p3);
 
@@ -168,8 +168,8 @@ class CurvePaneRenderer implements IPrimitivePaneRenderer {
 			else {
         const bezierCurveInfo = getCubicBezierCurveDrawingPoints(
           new Point2D(this._points[0].x, this._points[0].y),
-          new Point2D(this._points[1].x, this._points[1].y),
           new Point2D(this._points[2].x, this._points[2].y),
+          new Point2D(this._points[1].x, this._points[1].y),
         );
 				fillBezierPath(scope, bezierCurveInfo, this._fillColor);
 			}
