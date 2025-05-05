@@ -9,7 +9,7 @@ import {
 	SeriesAttachedParameter,
 	Time,
 } from 'lightweight-charts';
-import { positionsLine } from '../../helpers/dimensions/positions.ts';
+import { positionsLine } from '../../../helpers/dimensions/positions.ts';
 
 class CrosshairHighlightPaneRenderer implements IPrimitivePaneRenderer {
 	_data: CrosshairHighlightData;
