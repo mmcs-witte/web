@@ -14,13 +14,13 @@ import {
 	HistogramSeries,
 	BaselineSeries,
 } from 'lightweight-charts';
-import { AnchoredText } from "../plugins/anchored-text/anchored-text.ts";
+import { AnchoredText } from "../plugins/drawings-plugin/anchored-text.ts";
 import { TrendLine, TrendLineDrawingTool } from '../plugins/drawings-plugin/trend-line.ts';
 import { RectangleDrawingTool } from '../plugins/drawings-plugin/rectangle.ts';
 import { TriangleDrawingTool } from '../plugins/drawings-plugin/triangle.ts';
 import { FibChannelDrawingTool } from '../plugins/drawings-plugin/fibonacci-channel.ts';
 
-import { VolumeProfile } from '../plugins/volume-profile/volume-profile.ts';
+import { VolumeProfile } from '../plugins/drawings-plugin/volume-profile/volume-profile.ts';
 import { useDrawingsStore } from '../stores/drawings.ts';
 import { DrawingType } from '../types/drawings.ts';
 import { BandsIndicator } from '../plugins/indicators-plugin/bollinger-bands.ts'

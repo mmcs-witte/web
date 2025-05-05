@@ -12,7 +12,7 @@ import type {
 	SeriesType,
 	Time,
 } from 'lightweight-charts';
-import { positionsBox } from '../../helpers/dimensions/positions.ts';
+import { positionsBox } from '../../../helpers/dimensions/positions.ts';
 
 interface VolumeProfileItem {
 	y: Coordinate | null;
