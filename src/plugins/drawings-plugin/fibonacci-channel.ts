@@ -31,78 +31,78 @@ class FibChannelPaneRenderer implements IPrimitivePaneRenderer {
 		this._p2 = p2;
 		this._fillColor = fillColor;
 	}
-  draw(target: CanvasRenderingTarget2D) {
-    target.useBitmapCoordinateSpace(scope => {
-		  if (
-		  	this._p1.x === null ||
-		  	this._p1.y === null ||
-		  	this._p2.x === null ||
-		  	this._p2.y === null
-		  )
-		  	return;
-      
-      const ctx = scope.context;
+	draw(target: CanvasRenderingTarget2D) {
+		target.useBitmapCoordinateSpace(scope => {
+			if (
+				this._p1.x === null ||
+				this._p1.y === null ||
+				this._p2.x === null ||
+				this._p2.y === null
+			)
+				return;
 
-      const calculateDrawingPoint = (point: ViewPoint): ViewPoint =>  {
-        return { 
-          x : Math.round(point.x * scope.horizontalPixelRatio),
-          y : Math.round(point.y * scope.verticalPixelRatio)
-        };
-      };
+			const ctx = scope.context;
 
-      const drawingPoint1 : ViewPoint = calculateDrawingPoint({x: this._p1.x, y: this._p1.y});
-      const drawingPoint2 : ViewPoint = calculateDrawingPoint({x: this._p2.x, y: this._p2.y});
+			const calculateDrawingPoint = (point: ViewPoint): ViewPoint => {
+				return {
+					x: Math.round(point.x * scope.horizontalPixelRatio),
+					y: Math.round(point.y * scope.verticalPixelRatio)
+				};
+			};
 
-      const high = Math.min(drawingPoint1.y, drawingPoint2.y);
-      const low = Math.max(drawingPoint1.y, drawingPoint2.y);
-      const height = low - high;
+			const drawingPoint1: ViewPoint = calculateDrawingPoint({ x: this._p1.x, y: this._p1.y });
+			const drawingPoint2: ViewPoint = calculateDrawingPoint({ x: this._p2.x, y: this._p2.y });
 
-      ctx.font = '36px Arial';
+			const high = Math.min(drawingPoint1.y, drawingPoint2.y);
+			const low = Math.max(drawingPoint1.y, drawingPoint2.y);
+			const height = low - high;
 
-      const fibonacciLevels = [0, 0.236, 0.382, 0.5, 0.618, 0.786, 1];
-      const fibonacciLineColors = ['rgba(234, 53, 40, 0.93)', 'rgba(244, 244, 19, 0.94)','rgba(35, 220, 87, 0.75)',
-        'rgba(7, 227, 179, 0.75)','rgba(35, 186, 220, 0.75)','rgba(149, 35, 220, 0.75)'];
+			ctx.font = '36px Arial';
 
-      const oldGlobalAlpha = ctx.globalAlpha;
-      ctx.globalAlpha = 0.25;
+			const fibonacciLevels = [0, 0.236, 0.382, 0.5, 0.618, 0.786, 1];
+			const fibonacciLineColors = ['rgba(234, 53, 40, 0.93)', 'rgba(244, 244, 19, 0.94)', 'rgba(35, 220, 87, 0.75)',
+				'rgba(7, 227, 179, 0.75)', 'rgba(35, 186, 220, 0.75)', 'rgba(149, 35, 220, 0.75)'];
 
-      //  filling background first
-      for (let i: number = 0; i < fibonacciLevels.length; i++) {
-        const currIndex = i;
-        const nextIndex = currIndex + 1 < fibonacciLevels.length ? currIndex + 1 : currIndex;
-        const curLevel: number = fibonacciLevels[currIndex];
-        const nextLevel: number = fibonacciLevels[nextIndex];
-        if (currIndex != nextIndex) {
-          ctx.fillStyle = fibonacciLineColors[nextIndex % fibonacciLineColors.length];
-          const currY = low - height * curLevel;
-          const nextY = low - height * nextLevel;
+			const oldGlobalAlpha = ctx.globalAlpha;
+			ctx.globalAlpha = 0.25;
 
-          ctx.beginPath();
-          ctx.moveTo(drawingPoint1.x, currY);
-          ctx.lineTo(drawingPoint2.x, currY);
-          ctx.lineTo(drawingPoint2.x, nextY);
-          ctx.lineTo(drawingPoint1.x, nextY);
-          ctx.fill();
-        }
-      }
+			//  filling background first
+			for (let i: number = 0; i < fibonacciLevels.length; i++) {
+				const currIndex = i;
+				const nextIndex = currIndex + 1 < fibonacciLevels.length ? currIndex + 1 : currIndex;
+				const curLevel: number = fibonacciLevels[currIndex];
+				const nextLevel: number = fibonacciLevels[nextIndex];
+				if (currIndex != nextIndex) {
+					ctx.fillStyle = fibonacciLineColors[nextIndex % fibonacciLineColors.length];
+					const currY = low - height * curLevel;
+					const nextY = low - height * nextLevel;
 
-      ctx.globalAlpha = oldGlobalAlpha;
+					ctx.beginPath();
+					ctx.moveTo(drawingPoint1.x, currY);
+					ctx.lineTo(drawingPoint2.x, currY);
+					ctx.lineTo(drawingPoint2.x, nextY);
+					ctx.lineTo(drawingPoint1.x, nextY);
+					ctx.fill();
+				}
+			}
 
-      for (let i: number = 0; i < fibonacciLevels.length; i++) {
-        ctx.strokeStyle = fibonacciLineColors[i % fibonacciLineColors.length];
-        ctx.fillStyle = fibonacciLineColors[i % fibonacciLineColors.length];
-        ctx.lineWidth = 5;
+			ctx.globalAlpha = oldGlobalAlpha;
 
-        const level = fibonacciLevels[i];
-        const y = low - height * level;
-        ctx.beginPath();
-        ctx.moveTo(drawingPoint1.x, y);
-        ctx.lineTo(drawingPoint2.x, y);
-        ctx.stroke();
-        ctx.fillText(`${(level * 100).toFixed(1)}%`, (drawingPoint2.x + 4), (y - 2));
-      }
-    });
-  }
+			for (let i: number = 0; i < fibonacciLevels.length; i++) {
+				ctx.strokeStyle = fibonacciLineColors[i % fibonacciLineColors.length];
+				ctx.fillStyle = fibonacciLineColors[i % fibonacciLineColors.length];
+				ctx.lineWidth = 5;
+
+				const level = fibonacciLevels[i];
+				const y = low - height * level;
+				ctx.beginPath();
+				ctx.moveTo(drawingPoint1.x, y);
+				ctx.lineTo(drawingPoint2.x, y);
+				ctx.stroke();
+				ctx.fillText(`${(level * 100).toFixed(1)}%`, (drawingPoint2.x + 4), (y - 2));
+			}
+		});
+	}
 }
 
 class FibChannelPaneView implements IPrimitivePaneView {

@@ -1,7 +1,7 @@
 import type { CanvasRenderingTarget2D, BitmapCoordinatesRenderingScope } from 'fancy-canvas';
 
 import {
-  isBusinessDay
+	isBusinessDay
 } from 'lightweight-charts';
 import type {
 	Coordinate,
@@ -20,123 +20,121 @@ import { PluginBase } from '../plugin-base.ts';
 import { positionsBox } from '../../helpers/dimensions/positions.ts';
 
 import { Point as Point2D } from '@flatten-js/core';
-import { Vector as Vector2D} from '@flatten-js/core';
+import { Vector as Vector2D } from '@flatten-js/core';
 import type { Point, ViewPoint } from './drawing-base.ts';
 
 export interface AnnulusSectorRenderInfo {
-  annulusCenter: Point2D;
-  radiusSmall: number;
-  radiusBig: number;
-  startAngle: number;
-  sweepAngle: number;
+	annulusCenter: Point2D;
+	radiusSmall: number;
+	radiusBig: number;
+	startAngle: number;
+	sweepAngle: number;
 }
 
 
 // TODO: move it to our new math helper
 /// @details Counterclockwise angle from vector lhs to vector rhs
-export function AngleBetweenVectors(lhs: Vector2D, rhs: Vector2D): number
-{
-  const dot = lhs.x * rhs.x + lhs.y * rhs.y;			// Dot product between[x1, y1] and [x2, y2]
-  const det = lhs.x * rhs.y - lhs.y * rhs.x;			// Determinant
-  return Math.atan2(det, dot);						        // atan2(y, x) or atan2(sin, cos)
+export function AngleBetweenVectors(lhs: Vector2D, rhs: Vector2D): number {
+	const dot = lhs.x * rhs.x + lhs.y * rhs.y;			// Dot product between[x1, y1] and [x2, y2]
+	const det = lhs.x * rhs.y - lhs.y * rhs.x;			// Determinant
+	return Math.atan2(det, dot);						        // atan2(y, x) or atan2(sin, cos)
 }
 
-export function RotateVector(vec: Vector2D, angle: number)
-{
-  const px = vec.x * Math.cos(angle) - vec.y * Math.sin(angle);
-  const py = vec.x * Math.sin(angle) + vec.y * Math.cos(angle);
-  vec.x = px;
-  vec.y = py;
-  return vec;
+export function RotateVector(vec: Vector2D, angle: number) {
+	const px = vec.x * Math.cos(angle) - vec.y * Math.sin(angle);
+	const py = vec.x * Math.sin(angle) + vec.y * Math.cos(angle);
+	vec.x = px;
+	vec.y = py;
+	return vec;
 }
 
 
 export function fillAnnulusSector(renderingScope: BitmapCoordinatesRenderingScope, annulusRenderInfo: AnnulusSectorRenderInfo, fillColor: string, lineColor: string) {
-	const ctx = renderingScope.context;	
+	const ctx = renderingScope.context;
 
-  ctx.fillStyle = fillColor;
+	ctx.fillStyle = fillColor;
 
-  const center = annulusRenderInfo.annulusCenter;
-  const radiusSmall = annulusRenderInfo.radiusSmall;
-  const radiusBig = annulusRenderInfo.radiusBig;
-  const angleStart = annulusRenderInfo.startAngle;
-  const angleEnd = annulusRenderInfo.startAngle + annulusRenderInfo.sweepAngle;
+	const center = annulusRenderInfo.annulusCenter;
+	const radiusSmall = annulusRenderInfo.radiusSmall;
+	const radiusBig = annulusRenderInfo.radiusBig;
+	const angleStart = annulusRenderInfo.startAngle;
+	const angleEnd = annulusRenderInfo.startAngle + annulusRenderInfo.sweepAngle;
 
-  const centerVec = new Vector2D(center.x, center.y);
+	const centerVec = new Vector2D(center.x, center.y);
 
-  let r2 = new Vector2D(radiusSmall, 0);
-  r2 = centerVec.add(RotateVector(r2, angleEnd));
+	let r2 = new Vector2D(radiusSmall, 0);
+	r2 = centerVec.add(RotateVector(r2, angleEnd));
 
-  const isClockwise: boolean = annulusRenderInfo.sweepAngle < 0;
+	const isClockwise: boolean = annulusRenderInfo.sweepAngle < 0;
 
-  ctx.lineWidth = 5;
-  ctx.strokeStyle = lineColor;
+	ctx.lineWidth = 5;
+	ctx.strokeStyle = lineColor;
 
-  ctx.beginPath();
-  ctx.arc(center.x, center.y, radiusBig, angleStart, angleEnd, isClockwise);
-  ctx.lineTo(r2.x, r2.y);
-  ctx.arc(center.x, center.y, radiusSmall, angleEnd, angleStart, !isClockwise);
-  ctx.closePath();
-  ctx.fill();
+	ctx.beginPath();
+	ctx.arc(center.x, center.y, radiusBig, angleStart, angleEnd, isClockwise);
+	ctx.lineTo(r2.x, r2.y);
+	ctx.arc(center.x, center.y, radiusSmall, angleEnd, angleStart, !isClockwise);
+	ctx.closePath();
+	ctx.fill();
 
-  ctx.beginPath();
-  ctx.arc(center.x, center.y, radiusBig, angleStart, angleEnd, isClockwise);
-  ctx.stroke();
+	ctx.beginPath();
+	ctx.arc(center.x, center.y, radiusBig, angleStart, angleEnd, isClockwise);
+	ctx.stroke();
 }
 
 export function drawFibWedge(renderingScope: BitmapCoordinatesRenderingScope, points: Point2D[]) {
-  if (points.length != 3) {
-    return;
-  }
-   
-  const fibonacciLevels = [0, 0.236, 0.382, 0.5, 0.618, 0.786, 1, 1.256];
-  const fibonacciFillColors = ['rgba(234, 53, 40, 0.3)', 'rgba(244, 244, 19, 0.3)','rgba(35, 220, 87, 0.3)', 'rgba(7, 227, 179, 0.3)','rgba(35, 186, 220, 0.3)','rgba(149, 35, 220, 0.3)'];
-  const fibonacciLineColors = ['rgb(234, 53, 40)', 'rgb(244, 244, 19)','rgb(35, 220, 87)','rgb(7, 227, 179)','rgb(35, 186, 220)','rgb(149, 35, 220)'];
-  
-  const p0 = new Vector2D(points[0].x, points[0].y);
-  const p1 = new Vector2D(points[1].x, points[1].y);
-  const p2 = new Vector2D(points[2].x, points[2].y);
-  
-  const trendLineVec1: Vector2D = p1.subtract(p0);
-	const trendLineVec2: Vector2D = p2.subtract(p0);
-  
-  const radius = points[0].distanceTo(points[1])[0];
-  const startAngle = AngleBetweenVectors(new Vector2D(1.0, 0.0), trendLineVec1);
-  const sweepAngle = AngleBetweenVectors(trendLineVec1, trendLineVec2);
-  const annulusCenter = points[0];
-  
-  for (let i = 1; i < fibonacciLevels.length; i++) {
-    const currLevel = fibonacciLevels[i];
-    const prevLevel = i == 0 ? 0.0 : fibonacciLevels[i - 1];
-    
-    const prevRadius = radius * prevLevel;
-    const currRadius = radius * currLevel;
-    
-    const renderInfo: AnnulusSectorRenderInfo = {
-      annulusCenter: annulusCenter,
-      radiusSmall: prevRadius,
-      radiusBig: currRadius,
-      startAngle: startAngle,
-      sweepAngle: sweepAngle,
-    };
-    
-    const fillColor = fibonacciFillColors[i % fibonacciLineColors.length];
-    const lineColor = fibonacciLineColors[i % fibonacciLineColors.length];
-    fillAnnulusSector(renderingScope, renderInfo, fillColor, lineColor);
-    
-    // drawing label
-    let angleBisectorVec: Vector2D  = p1.subtract(p0);
-    angleBisectorVec = RotateVector(angleBisectorVec, sweepAngle / 2);
-    angleBisectorVec = angleBisectorVec.scale(currLevel, currLevel);
+	if (points.length != 3) {
+		return;
+	}
 
-    const ctx = renderingScope.context;
-    const outX: number = p0.add(angleBisectorVec).x;
-    const outY: number = p0.add(angleBisectorVec).y;
-    ctx.fillColor = lineColor;
-    ctx.strokeStyle = lineColor;
-    ctx.font = '36px Arial';
-    ctx.fillText(`${(currLevel * 100).toFixed(1)}%`, outX - 115, outY);
-  }
+	const fibonacciLevels = [0, 0.236, 0.382, 0.5, 0.618, 0.786, 1, 1.256];
+	const fibonacciFillColors = ['rgba(234, 53, 40, 0.3)', 'rgba(244, 244, 19, 0.3)', 'rgba(35, 220, 87, 0.3)', 'rgba(7, 227, 179, 0.3)', 'rgba(35, 186, 220, 0.3)', 'rgba(149, 35, 220, 0.3)'];
+	const fibonacciLineColors = ['rgb(234, 53, 40)', 'rgb(244, 244, 19)', 'rgb(35, 220, 87)', 'rgb(7, 227, 179)', 'rgb(35, 186, 220)', 'rgb(149, 35, 220)'];
+
+	const p0 = new Vector2D(points[0].x, points[0].y);
+	const p1 = new Vector2D(points[1].x, points[1].y);
+	const p2 = new Vector2D(points[2].x, points[2].y);
+
+	const trendLineVec1: Vector2D = p1.subtract(p0);
+	const trendLineVec2: Vector2D = p2.subtract(p0);
+
+	const radius = points[0].distanceTo(points[1])[0];
+	const startAngle = AngleBetweenVectors(new Vector2D(1.0, 0.0), trendLineVec1);
+	const sweepAngle = AngleBetweenVectors(trendLineVec1, trendLineVec2);
+	const annulusCenter = points[0];
+
+	for (let i = 1; i < fibonacciLevels.length; i++) {
+		const currLevel = fibonacciLevels[i];
+		const prevLevel = i == 0 ? 0.0 : fibonacciLevels[i - 1];
+
+		const prevRadius = radius * prevLevel;
+		const currRadius = radius * currLevel;
+
+		const renderInfo: AnnulusSectorRenderInfo = {
+			annulusCenter: annulusCenter,
+			radiusSmall: prevRadius,
+			radiusBig: currRadius,
+			startAngle: startAngle,
+			sweepAngle: sweepAngle,
+		};
+
+		const fillColor = fibonacciFillColors[i % fibonacciLineColors.length];
+		const lineColor = fibonacciLineColors[i % fibonacciLineColors.length];
+		fillAnnulusSector(renderingScope, renderInfo, fillColor, lineColor);
+
+		// drawing label
+		let angleBisectorVec: Vector2D = p1.subtract(p0);
+		angleBisectorVec = RotateVector(angleBisectorVec, sweepAngle / 2);
+		angleBisectorVec = angleBisectorVec.scale(currLevel, currLevel);
+
+		const ctx = renderingScope.context;
+		const outX: number = p0.add(angleBisectorVec).x;
+		const outY: number = p0.add(angleBisectorVec).y;
+		ctx.fillColor = lineColor;
+		ctx.strokeStyle = lineColor;
+		ctx.font = '36px Arial';
+		ctx.fillText(`${(currLevel * 100).toFixed(1)}%`, outX - 115, outY);
+	}
 }
 
 class FibWedgePaneRenderer implements IPrimitivePaneRenderer {
@@ -153,38 +151,37 @@ class FibWedgePaneRenderer implements IPrimitivePaneRenderer {
 			if (this._points.length < 2) {
 				return;
 			}
-			
-      const ctx = scope.context;
 
-      const calculateDrawingPoint = (point: ViewPoint): ViewPoint =>  {
-        return { 
-          x : Math.round(point.x * scope.horizontalPixelRatio),
-          y : Math.round(point.y * scope.verticalPixelRatio)
-        };
-      };
+			const ctx = scope.context;
 
-      const drawingPoint1 : ViewPoint = calculateDrawingPoint(this._points[0]);
-      const drawingPoint2 : ViewPoint = calculateDrawingPoint(this._points[1]);
-      const drawingPoint3 : ViewPoint = this._points.length > 2 ? 
-        calculateDrawingPoint(this._points[2]) :
-        drawingPoint2;
+			const calculateDrawingPoint = (point: ViewPoint): ViewPoint => {
+				return {
+					x: Math.round(point.x * scope.horizontalPixelRatio),
+					y: Math.round(point.y * scope.verticalPixelRatio)
+				};
+			};
 
-			if (this._points.length < 3)
-			{
+			const drawingPoint1: ViewPoint = calculateDrawingPoint(this._points[0]);
+			const drawingPoint2: ViewPoint = calculateDrawingPoint(this._points[1]);
+			const drawingPoint3: ViewPoint = this._points.length > 2 ?
+				calculateDrawingPoint(this._points[2]) :
+				drawingPoint2;
+
+			if (this._points.length < 3) {
 				ctx.beginPath();
 				ctx.moveTo(drawingPoint1.x, drawingPoint1.y);
-        ctx.lineTo(drawingPoint2.x, drawingPoint2.y);
-        ctx.strokeStyle = this._fillColor;
-        ctx.lineWidth = scope.verticalPixelRatio;
+				ctx.lineTo(drawingPoint2.x, drawingPoint2.y);
+				ctx.strokeStyle = this._fillColor;
+				ctx.lineWidth = scope.verticalPixelRatio;
 				ctx.stroke();
 			}
 			else {
-        const points: Point2D[] = [
-          new Point2D(drawingPoint1.x, drawingPoint1.y),
-          new Point2D(drawingPoint2.x, drawingPoint2.y),
-          new Point2D(drawingPoint3.x, drawingPoint3.y),
-        ]
-        drawFibWedge(scope, points);
+				const points: Point2D[] = [
+					new Point2D(drawingPoint1.x, drawingPoint1.y),
+					new Point2D(drawingPoint2.x, drawingPoint2.y),
+					new Point2D(drawingPoint3.x, drawingPoint3.y),
+				]
+				drawFibWedge(scope, points);
 			}
 		});
 	}
@@ -217,11 +214,11 @@ class FibWedgePaneView implements IPrimitivePaneView {
 
 	renderer() {
 		const n: number = this._source._numPointsToUse;
-    const points: ViewPoint[] = [];
-    for (let i: number = 0; i < n; i++) {
-      points.push(i == 0 ? this._p1 : i == 1 ? this._p2 : this._p3);
-    } 
-    return new FibWedgePaneRenderer(
+		const points: ViewPoint[] = [];
+		for (let i: number = 0; i < n; i++) {
+			points.push(i == 0 ? this._p1 : i == 1 ? this._p2 : this._p3);
+		}
+		return new FibWedgePaneRenderer(
 			points,
 			this._source._options.fillColor
 		);
@@ -254,10 +251,10 @@ class FibWedgeAxisPaneRenderer implements IPrimitivePaneRenderer {
 			if (this._p1 === null || this._p2 === null || this._p3 === null) return;
 			const ctx = scope.context;
 			ctx.globalAlpha = 0.5;
-			
-      const posStart: number = Math.min(this._p1, Math.min(this._p2, this._p3));
-      const posEnd: number = Math.max(this._p1, Math.max(this._p2, this._p3));
-      const positions = positionsBox(
+
+			const posStart: number = Math.min(this._p1, Math.min(this._p2, this._p3));
+			const posEnd: number = Math.max(this._p1, Math.max(this._p2, this._p3));
+			const positions = positionsBox(
 				posStart,
 				posEnd,
 				this._vertical ? scope.verticalPixelRatio : scope.horizontalPixelRatio
@@ -416,24 +413,24 @@ class FibWedge extends PluginBase {
 	_priceAxisViews: FibWedgePriceAxisView[];
 	_priceAxisPaneViews: FibWedgePriceAxisPaneView[];
 	_timeAxisPaneViews: FibWedgeTimeAxisPaneView[];
-  _numPointsToUse: number;
+	_numPointsToUse: number;
 
 	constructor(
 		points: Point[],
 		options: Partial<FibWedgeOptions> = {}
 	) {
 		super();
-    if (points.length == 0) {
-      this._p1 = { time: 0, price: 0 };
-      this._p2 = this._p1;
-      this._p3 = this._p1;
-      this._numPointsToUse = 2;
-    } else {
-      this._p1 = points[0];
-      this._p2 = points.length >= 2 ? points[1] : points[0];
-      this._p3 = points.length >= 3 ? points[2] : points[0];
-      this._numPointsToUse = Math.min(points.length + 1, 3);
-    }
+		if (points.length == 0) {
+			this._p1 = { time: 0, price: 0 };
+			this._p2 = this._p1;
+			this._p3 = this._p1;
+			this._numPointsToUse = 2;
+		} else {
+			this._p1 = points[0];
+			this._p2 = points.length >= 2 ? points[1] : points[0];
+			this._p3 = points.length >= 3 ? points[2] : points[0];
+			this._numPointsToUse = Math.min(points.length + 1, 3);
+		}
 		this._options = {
 			...defaultOptions,
 			...options,
@@ -488,7 +485,7 @@ class FibWedge extends PluginBase {
 }
 
 class PreviewFibWedge extends FibWedge {
-  constructor(
+	constructor(
 		points: Point[],
 		options: Partial<FibWedgeOptions> = {}
 	) {
@@ -496,17 +493,17 @@ class PreviewFibWedge extends FibWedge {
 		this._options.fillColor = this._options.previewFillColor;
 	}
 
-	public updateDrawingPoint(p: Point, pointIndexToUpdate : number) {
-    pointIndexToUpdate = Math.min(Math.max(0, pointIndexToUpdate), 3);
+	public updateDrawingPoint(p: Point, pointIndexToUpdate: number) {
+		pointIndexToUpdate = Math.min(Math.max(0, pointIndexToUpdate), 3);
 
-    switch (pointIndexToUpdate) {
+		switch (pointIndexToUpdate) {
 			case 1:
 				this._p2 = p;
-        this._numPointsToUse = 2;
+				this._numPointsToUse = 2;
 				break;
 			case 2:
 				this._p3 = p;
-        this._numPointsToUse = 3;
+				this._numPointsToUse = 3;
 				break;
 		}
 
@@ -607,7 +604,7 @@ export class FibWedgeDrawingTool {
 	private _addPoint(p: Point) {
 		this._points.push(p);
 		if (this._points.length > 2) {
-			this._addNewDrawing(this._points[0], this._points[1],  this._points[2]);
+			this._addNewDrawing(this._points[0], this._points[1], this._points[2]);
 			this.stopDrawing();
 			this._removePreviewDrawing();
 		}

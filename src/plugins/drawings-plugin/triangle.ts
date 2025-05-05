@@ -1,7 +1,7 @@
 import type { CanvasRenderingTarget2D } from 'fancy-canvas';
 
 import {
-  isBusinessDay
+	isBusinessDay
 } from 'lightweight-charts';
 import type {
 	Coordinate,
@@ -34,37 +34,36 @@ class TrianglePaneRenderer implements IPrimitivePaneRenderer {
 			if (this._points.length < 2) {
 				return;
 			}
-			
-      const ctx = scope.context;
 
-      const calculateDrawingPoint = (point: ViewPoint): ViewPoint =>  {
-        return { 
-          x : Math.round(point.x * scope.horizontalPixelRatio),
-          y : Math.round(point.y * scope.verticalPixelRatio)
-        };
-      };
+			const ctx = scope.context;
 
-      const drawingPoint1 : ViewPoint = calculateDrawingPoint(this._points[0]);
-      const drawingPoint2 : ViewPoint = calculateDrawingPoint(this._points[1]);
-      const drawingPoint3 : ViewPoint = this._points.length > 2 ? 
-        calculateDrawingPoint(this._points[2]) :
-        drawingPoint2;
+			const calculateDrawingPoint = (point: ViewPoint): ViewPoint => {
+				return {
+					x: Math.round(point.x * scope.horizontalPixelRatio),
+					y: Math.round(point.y * scope.verticalPixelRatio)
+				};
+			};
 
-			if (this._points.length < 3)
-			{
+			const drawingPoint1: ViewPoint = calculateDrawingPoint(this._points[0]);
+			const drawingPoint2: ViewPoint = calculateDrawingPoint(this._points[1]);
+			const drawingPoint3: ViewPoint = this._points.length > 2 ?
+				calculateDrawingPoint(this._points[2]) :
+				drawingPoint2;
+
+			if (this._points.length < 3) {
 				ctx.beginPath();
 				ctx.moveTo(drawingPoint1.x, drawingPoint1.y);
-        ctx.lineTo(drawingPoint2.x, drawingPoint2.y);
-        ctx.strokeStyle = this._fillColor;
-        ctx.lineWidth = scope.verticalPixelRatio;
+				ctx.lineTo(drawingPoint2.x, drawingPoint2.y);
+				ctx.strokeStyle = this._fillColor;
+				ctx.lineWidth = scope.verticalPixelRatio;
 				ctx.stroke();
 			}
 			else {
-        ctx.fillStyle = this._fillColor;
+				ctx.fillStyle = this._fillColor;
 				ctx.beginPath();
 				ctx.moveTo(drawingPoint1.x, drawingPoint1.y);
-        ctx.lineTo(drawingPoint2.x, drawingPoint2.y);
-        ctx.lineTo(drawingPoint3.x, drawingPoint3.y);
+				ctx.lineTo(drawingPoint2.x, drawingPoint2.y);
+				ctx.lineTo(drawingPoint3.x, drawingPoint3.y);
 				ctx.fill();
 			}
 		});
@@ -98,11 +97,11 @@ class TrianglePaneView implements IPrimitivePaneView {
 
 	renderer() {
 		const n: number = this._source._numPointsToUse;
-    const points: ViewPoint[] = [];
-    for (let i: number = 0; i < n; i++) {
-      points.push(i == 0 ? this._p1 : i == 1 ? this._p2 : this._p3);
-    } 
-    return new TrianglePaneRenderer(
+		const points: ViewPoint[] = [];
+		for (let i: number = 0; i < n; i++) {
+			points.push(i == 0 ? this._p1 : i == 1 ? this._p2 : this._p3);
+		}
+		return new TrianglePaneRenderer(
 			points,
 			this._source._options.fillColor
 		);
@@ -135,10 +134,10 @@ class TriangleAxisPaneRenderer implements IPrimitivePaneRenderer {
 			if (this._p1 === null || this._p2 === null || this._p3 === null) return;
 			const ctx = scope.context;
 			ctx.globalAlpha = 0.5;
-			
-      const posStart: number = Math.min(this._p1, Math.min(this._p2, this._p3));
-      const posEnd: number = Math.max(this._p1, Math.max(this._p2, this._p3));
-      const positions = positionsBox(
+
+			const posStart: number = Math.min(this._p1, Math.min(this._p2, this._p3));
+			const posEnd: number = Math.max(this._p1, Math.max(this._p2, this._p3));
+			const positions = positionsBox(
 				posStart,
 				posEnd,
 				this._vertical ? scope.verticalPixelRatio : scope.horizontalPixelRatio
@@ -298,24 +297,24 @@ class Triangle extends PluginBase {
 	_priceAxisViews: TrianglePriceAxisView[];
 	_priceAxisPaneViews: TrianglePriceAxisPaneView[];
 	_timeAxisPaneViews: TriangleTimeAxisPaneView[];
-  _numPointsToUse: number;
+	_numPointsToUse: number;
 
 	constructor(
 		points: Point[],
 		options: Partial<TriangleDrawingToolOptions> = {}
 	) {
 		super();
-    if (points.length == 0) {
-      this._p1 = { time: 0, price: 0 };
-      this._p2 = this._p1;
-      this._p3 = this._p1;
-      this._numPointsToUse = 2;
-    } else {
-      this._p1 = points[0];
-      this._p2 = points.length >= 2 ? points[1] : points[0];
-      this._p3 = points.length >= 3 ? points[2] : points[0];
-      this._numPointsToUse = Math.min(points.length + 1, 3);
-    }
+		if (points.length == 0) {
+			this._p1 = { time: 0, price: 0 };
+			this._p2 = this._p1;
+			this._p3 = this._p1;
+			this._numPointsToUse = 2;
+		} else {
+			this._p1 = points[0];
+			this._p2 = points.length >= 2 ? points[1] : points[0];
+			this._p3 = points.length >= 3 ? points[2] : points[0];
+			this._numPointsToUse = Math.min(points.length + 1, 3);
+		}
 		this._options = {
 			...defaultOptions,
 			...options,
@@ -370,7 +369,7 @@ class Triangle extends PluginBase {
 }
 
 class PreviewTriangle extends Triangle {
-  constructor(
+	constructor(
 		points: Point[],
 		options: Partial<TriangleDrawingToolOptions> = {}
 	) {
@@ -378,17 +377,17 @@ class PreviewTriangle extends Triangle {
 		this._options.fillColor = this._options.previewFillColor;
 	}
 
-	public updateDrawingPoint(p: Point, pointIndexToUpdate : number) {
-    pointIndexToUpdate = Math.min(Math.max(0, pointIndexToUpdate), 3);
+	public updateDrawingPoint(p: Point, pointIndexToUpdate: number) {
+		pointIndexToUpdate = Math.min(Math.max(0, pointIndexToUpdate), 3);
 
-    switch (pointIndexToUpdate) {
+		switch (pointIndexToUpdate) {
 			case 1:
 				this._p2 = p;
-        this._numPointsToUse = 2;
+				this._numPointsToUse = 2;
 				break;
 			case 2:
 				this._p3 = p;
-        this._numPointsToUse = 3;
+				this._numPointsToUse = 3;
 				break;
 		}
 
@@ -489,7 +488,7 @@ export class TriangleDrawingTool {
 	private _addPoint(p: Point) {
 		this._points.push(p);
 		if (this._points.length > 2) {
-			this._addNewDrawing(this._points[0], this._points[1],  this._points[2]);
+			this._addNewDrawing(this._points[0], this._points[1], this._points[2]);
 			this.stopDrawing();
 			this._removePreviewDrawing();
 		}

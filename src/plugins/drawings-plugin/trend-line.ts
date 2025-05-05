@@ -1,18 +1,18 @@
 import type { BitmapCoordinatesRenderingScope, CanvasRenderingTarget2D } from 'fancy-canvas';
 import type {
-	Coordinate,
-	IChartApi,
-	ISeriesApi,
-	IPrimitivePaneRenderer,
-	IPrimitivePaneView,
+  Coordinate,
+  IChartApi,
+  ISeriesApi,
+  IPrimitivePaneRenderer,
+  IPrimitivePaneView,
   ISeriesPrimitiveAxisView,
   PrimitivePaneViewZOrder,
   MouseEventParams,
-	SeriesType,
-	Time,
+  SeriesType,
+  Time,
 } from 'lightweight-charts';
 
-import { isBusinessDay } from  'lightweight-charts';
+import { isBusinessDay } from 'lightweight-charts';
 
 import { ensureDefined } from '../../helpers/assertions.ts';
 import { PluginBase } from '../plugin-base.ts';
@@ -20,60 +20,60 @@ import { positionsBox } from '../../helpers/dimensions/positions.ts';
 import type { Point, ViewPoint } from './drawing-base.ts';
 
 class TrendLinePaneRenderer implements IPrimitivePaneRenderer {
-	_p1: ViewPoint;
-	_p2: ViewPoint;
-	_text1: string;
-	_text2: string;
-	_options: TrendLineOptions;
+  _p1: ViewPoint;
+  _p2: ViewPoint;
+  _text1: string;
+  _text2: string;
+  _options: TrendLineOptions;
 
-	constructor(p1: ViewPoint, p2: ViewPoint, text1: string, text2: string, options: TrendLineOptions) {
-		this._p1 = p1;
-		this._p2 = p2;
-		this._text1 = text1;
-		this._text2 = text2;
-		this._options = options;
-	}
+  constructor(p1: ViewPoint, p2: ViewPoint, text1: string, text2: string, options: TrendLineOptions) {
+    this._p1 = p1;
+    this._p2 = p2;
+    this._text1 = text1;
+    this._text2 = text2;
+    this._options = options;
+  }
 
-	draw(target: CanvasRenderingTarget2D) {
-		target.useBitmapCoordinateSpace(scope => {
-			if (
-				this._p1.x === null ||
-				this._p1.y === null ||
-				this._p2.x === null ||
-				this._p2.y === null
-			)
-				return;
-			const ctx = scope.context;
-			const x1Scaled = Math.round(this._p1.x * scope.horizontalPixelRatio);
-			const y1Scaled = Math.round(this._p1.y * scope.verticalPixelRatio);
-			const x2Scaled = Math.round(this._p2.x * scope.horizontalPixelRatio);
-			const y2Scaled = Math.round(this._p2.y * scope.verticalPixelRatio);
-			ctx.lineWidth = this._options.width;
-			ctx.strokeStyle = this._options.lineColor;
-			ctx.beginPath();
-			ctx.moveTo(x1Scaled, y1Scaled);
-			ctx.lineTo(x2Scaled, y2Scaled);
-			ctx.stroke();
-			if (this._options.showLabels) {
-				this._drawTextLabel(scope, this._text1, x1Scaled, y1Scaled, true);
-				this._drawTextLabel(scope, this._text2, x2Scaled, y2Scaled, false);
-			}
-		});
-	}
+  draw(target: CanvasRenderingTarget2D) {
+    target.useBitmapCoordinateSpace(scope => {
+      if (
+        this._p1.x === null ||
+        this._p1.y === null ||
+        this._p2.x === null ||
+        this._p2.y === null
+      )
+        return;
+      const ctx = scope.context;
+      const x1Scaled = Math.round(this._p1.x * scope.horizontalPixelRatio);
+      const y1Scaled = Math.round(this._p1.y * scope.verticalPixelRatio);
+      const x2Scaled = Math.round(this._p2.x * scope.horizontalPixelRatio);
+      const y2Scaled = Math.round(this._p2.y * scope.verticalPixelRatio);
+      ctx.lineWidth = this._options.width;
+      ctx.strokeStyle = this._options.lineColor;
+      ctx.beginPath();
+      ctx.moveTo(x1Scaled, y1Scaled);
+      ctx.lineTo(x2Scaled, y2Scaled);
+      ctx.stroke();
+      if (this._options.showLabels) {
+        this._drawTextLabel(scope, this._text1, x1Scaled, y1Scaled, true);
+        this._drawTextLabel(scope, this._text2, x2Scaled, y2Scaled, false);
+      }
+    });
+  }
 
-	_drawTextLabel(scope: BitmapCoordinatesRenderingScope, text: string, x: number, y: number, left: boolean) {
-		scope.context.font = '24px Arial';
-		scope.context.beginPath();
-		const offset = 5 * scope.horizontalPixelRatio;
-		const textWidth = scope.context.measureText(text);
-		const leftAdjustment = left ? textWidth.width + offset * 4 : 0;
-		scope.context.fillStyle = this._options.labelBackgroundColor;
-		scope.context.roundRect(x + offset - leftAdjustment, y - 24, textWidth.width + offset * 2,  24 + offset, 5);
-		scope.context.fill();
-		scope.context.beginPath();
-		scope.context.fillStyle = this._options.labelTextColor;
-		scope.context.fillText(text, x + offset * 2 - leftAdjustment, y);
-	}
+  _drawTextLabel(scope: BitmapCoordinatesRenderingScope, text: string, x: number, y: number, left: boolean) {
+    scope.context.font = '24px Arial';
+    scope.context.beginPath();
+    const offset = 5 * scope.horizontalPixelRatio;
+    const textWidth = scope.context.measureText(text);
+    const leftAdjustment = left ? textWidth.width + offset * 4 : 0;
+    scope.context.fillStyle = this._options.labelBackgroundColor;
+    scope.context.roundRect(x + offset - leftAdjustment, y - 24, textWidth.width + offset * 2, 24 + offset, 5);
+    scope.context.fill();
+    scope.context.beginPath();
+    scope.context.fillStyle = this._options.labelTextColor;
+    scope.context.fillText(text, x + offset * 2 - leftAdjustment, y);
+  }
 }
 
 class RectangleAxisPaneRenderer implements IPrimitivePaneRenderer {
@@ -218,136 +218,136 @@ class RectanglePriceAxisView extends TrendLineAxisView {
 }
 
 class TrendLinePaneView implements IPrimitivePaneView {
-	_source: TrendLine;
-	_p1: ViewPoint = { x: null, y: null };
-	_p2: ViewPoint = { x: null, y: null };
+  _source: TrendLine;
+  _p1: ViewPoint = { x: null, y: null };
+  _p2: ViewPoint = { x: null, y: null };
 
-	constructor(source: TrendLine) {
-		this._source = source;
-	}
+  constructor(source: TrendLine) {
+    this._source = source;
+  }
 
-	update() {
-		const series = this._source._series;
-		const y1 = series.priceToCoordinate(this._source._p1.price);
-		const y2 = series.priceToCoordinate(this._source._p2.price);
-		const timeScale = this._source._chart.timeScale();
-		const x1 = timeScale.timeToCoordinate(this._source._p1.time);
-		const x2 = timeScale.timeToCoordinate(this._source._p2.time);
-		this._p1 = { x: x1, y: y1 };
-		this._p2 = { x: x2, y: y2 };
-	}
+  update() {
+    const series = this._source._series;
+    const y1 = series.priceToCoordinate(this._source._p1.price);
+    const y2 = series.priceToCoordinate(this._source._p2.price);
+    const timeScale = this._source._chart.timeScale();
+    const x1 = timeScale.timeToCoordinate(this._source._p1.time);
+    const x2 = timeScale.timeToCoordinate(this._source._p2.time);
+    this._p1 = { x: x1, y: y1 };
+    this._p2 = { x: x2, y: y2 };
+  }
 
-	renderer() {
-		return new TrendLinePaneRenderer(
-			this._p1,
-			this._p2,
-			'' + this._source._p1.price.toFixed(1),
-			'' + this._source._p2.price.toFixed(1),
-			this._source._options
-		);
-	}
+  renderer() {
+    return new TrendLinePaneRenderer(
+      this._p1,
+      this._p2,
+      '' + this._source._p1.price.toFixed(1),
+      '' + this._source._p2.price.toFixed(1),
+      this._source._options
+    );
+  }
 }
 
 
 export interface TrendLineOptions {
-	lineColor: string;
-	previewlineColor: string;
-	width: number;
-	showLabels: boolean;
-	labelBackgroundColor: string;
-	labelTextColor: string;
+  lineColor: string;
+  previewlineColor: string;
+  width: number;
+  showLabels: boolean;
+  labelBackgroundColor: string;
+  labelTextColor: string;
   priceLabelFormatter: (price: number) => string;
-	timeLabelFormatter: (time: Time) => string;
+  timeLabelFormatter: (time: Time) => string;
 }
 
 const defaultOptions: TrendLineOptions = {
-	lineColor: 'rgba(222, 15, 15, 0.96)',
+  lineColor: 'rgba(222, 15, 15, 0.96)',
   previewlineColor: 'rgba(222, 15, 15, 0.7)',
-	width: 6,
-	showLabels: true,
-	labelBackgroundColor: 'rgba(255, 255, 255, 0.85)',
-	labelTextColor: 'rgb(245, 9, 9)',
+  width: 6,
+  showLabels: true,
+  labelBackgroundColor: 'rgba(255, 255, 255, 0.85)',
+  labelTextColor: 'rgb(245, 9, 9)',
   priceLabelFormatter: (price: number) => price.toFixed(2),
-	timeLabelFormatter: (time: Time) => {
-		if (typeof time == 'string') return time;
-		const date = isBusinessDay(time)
-			? new Date(time.year, time.month, time.day)
-			: new Date(time * 1000);
-		return date.toLocaleDateString();
-	},
+  timeLabelFormatter: (time: Time) => {
+    if (typeof time == 'string') return time;
+    const date = isBusinessDay(time)
+      ? new Date(time.year, time.month, time.day)
+      : new Date(time * 1000);
+    return date.toLocaleDateString();
+  },
 };
 
 export class TrendLine extends PluginBase {
-	_p1: Point;
-	_p2: Point;
-	_paneViews: TrendLinePaneView[];
-	_timeAxisViews: RectangleTimeAxisView[];
-	_priceAxisViews: RectanglePriceAxisView[];
-	_priceAxisPaneViews: RectanglePriceAxisPaneView[];
-	_timeAxisPaneViews: RectangleTimeAxisPaneView[];
-	_options: TrendLineOptions;
-	_minPrice: number;
-	_maxPrice: number;
+  _p1: Point;
+  _p2: Point;
+  _paneViews: TrendLinePaneView[];
+  _timeAxisViews: RectangleTimeAxisView[];
+  _priceAxisViews: RectanglePriceAxisView[];
+  _priceAxisPaneViews: RectanglePriceAxisPaneView[];
+  _timeAxisPaneViews: RectangleTimeAxisPaneView[];
+  _options: TrendLineOptions;
+  _minPrice: number;
+  _maxPrice: number;
 
-	constructor(
-		p1: Point,
-		p2: Point,
-		options?: Partial<TrendLineOptions>
-	) {
+  constructor(
+    p1: Point,
+    p2: Point,
+    options?: Partial<TrendLineOptions>
+  ) {
     super();
-		this._p1 = p1;
-		this._p2 = p2;
-		this._minPrice = Math.min(this._p1.price, this._p2.price);
-		this._maxPrice = Math.max(this._p1.price, this._p2.price);
-		this._options = {
-			...defaultOptions,
-			...options,
-		};
-		this._paneViews = [new TrendLinePaneView(this)];
+    this._p1 = p1;
+    this._p2 = p2;
+    this._minPrice = Math.min(this._p1.price, this._p2.price);
+    this._maxPrice = Math.max(this._p1.price, this._p2.price);
+    this._options = {
+      ...defaultOptions,
+      ...options,
+    };
+    this._paneViews = [new TrendLinePaneView(this)];
     this._timeAxisViews = [
-			new RectangleTimeAxisView(this, p1),
-			new RectangleTimeAxisView(this, p2),
-		];
-		this._priceAxisViews = [
-			new RectanglePriceAxisView(this, p1),
-			new RectanglePriceAxisView(this, p2),
-		];
-		this._priceAxisPaneViews = [new RectanglePriceAxisPaneView(this, true)];
-		this._timeAxisPaneViews = [new RectangleTimeAxisPaneView(this, false)];
-	}
+      new RectangleTimeAxisView(this, p1),
+      new RectangleTimeAxisView(this, p2),
+    ];
+    this._priceAxisViews = [
+      new RectanglePriceAxisView(this, p1),
+      new RectanglePriceAxisView(this, p2),
+    ];
+    this._priceAxisPaneViews = [new RectanglePriceAxisPaneView(this, true)];
+    this._timeAxisPaneViews = [new RectangleTimeAxisPaneView(this, false)];
+  }
 
-	  updateAllViews() {
-      this._paneViews.forEach(pw => pw.update());
-      this._timeAxisViews.forEach(pw => pw.update());
-      this._priceAxisViews.forEach(pw => pw.update());
-      this._priceAxisPaneViews.forEach(pw => pw.update());
-      this._timeAxisPaneViews.forEach(pw => pw.update());
-    }
-  
-    priceAxisViews() {
-      return this._priceAxisViews;
-    }
-  
-    timeAxisViews() {
-      return this._timeAxisViews;
-    }
-  
-    paneViews() {
-      return this._paneViews;
-    }
-  
-    priceAxisPaneViews() {
-      return this._priceAxisPaneViews;
-    }
-  
-    timeAxisPaneViews() {
-      return this._timeAxisPaneViews;
-    }
-  
-    applyOptions(options: Partial<TrendLineOptions>) {
-      this._options = { ...this._options, ...options };
-      this.requestUpdate();
-    }
+  updateAllViews() {
+    this._paneViews.forEach(pw => pw.update());
+    this._timeAxisViews.forEach(pw => pw.update());
+    this._priceAxisViews.forEach(pw => pw.update());
+    this._priceAxisPaneViews.forEach(pw => pw.update());
+    this._timeAxisPaneViews.forEach(pw => pw.update());
+  }
+
+  priceAxisViews() {
+    return this._priceAxisViews;
+  }
+
+  timeAxisViews() {
+    return this._timeAxisViews;
+  }
+
+  paneViews() {
+    return this._paneViews;
+  }
+
+  priceAxisPaneViews() {
+    return this._priceAxisPaneViews;
+  }
+
+  timeAxisPaneViews() {
+    return this._timeAxisPaneViews;
+  }
+
+  applyOptions(options: Partial<TrendLineOptions>) {
+    this._options = { ...this._options, ...options };
+    this.requestUpdate();
+  }
 }
 
 class PreviewTrendLine extends TrendLine {

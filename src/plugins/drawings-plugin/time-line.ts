@@ -1,14 +1,14 @@
 import type { CanvasRenderingTarget2D } from 'fancy-canvas';
 import type {
-	Coordinate,
-	IChartApi,
-	ISeriesApi,
-	ISeriesPrimitiveAxisView,
-	IPrimitivePaneRenderer,
-	IPrimitivePaneView,
-	MouseEventParams,
-	SeriesType,
-	Time,
+  Coordinate,
+  IChartApi,
+  ISeriesApi,
+  ISeriesPrimitiveAxisView,
+  IPrimitivePaneRenderer,
+  IPrimitivePaneView,
+  MouseEventParams,
+  SeriesType,
+  Time,
 } from 'lightweight-charts';
 
 import { ensureDefined } from '../../helpers/assertions.ts';
@@ -17,100 +17,100 @@ import { positionsLine } from '../../helpers/dimensions/positions.ts';
 import type { Point } from './drawing-base.ts';
 
 class TimeLinePaneRenderer implements IPrimitivePaneRenderer {
-	_x: Coordinate | null = null;
-	_options: TimeLineOptions;
-	constructor(x: Coordinate | null, options: TimeLineOptions) {
-		this._x = x;
-		this._options = options;
-	}
-	draw(target: CanvasRenderingTarget2D) {
-		target.useBitmapCoordinateSpace(scope => {
-			if (this._x === null) return;
-			const ctx = scope.context;
-			const position = positionsLine(
-				this._x,
-				scope.horizontalPixelRatio,
-				this._options.width
-			);
-			ctx.fillStyle = this._options.color;
-			ctx.fillRect(
-				position.position,
-				0,
-				position.length,
-				scope.bitmapSize.height
-			);
-		});
-	}
+  _x: Coordinate | null = null;
+  _options: TimeLineOptions;
+  constructor(x: Coordinate | null, options: TimeLineOptions) {
+    this._x = x;
+    this._options = options;
+  }
+  draw(target: CanvasRenderingTarget2D) {
+    target.useBitmapCoordinateSpace(scope => {
+      if (this._x === null) return;
+      const ctx = scope.context;
+      const position = positionsLine(
+        this._x,
+        scope.horizontalPixelRatio,
+        this._options.width
+      );
+      ctx.fillStyle = this._options.color;
+      ctx.fillRect(
+        position.position,
+        0,
+        position.length,
+        scope.bitmapSize.height
+      );
+    });
+  }
 }
 
 class TimeLinePaneView implements IPrimitivePaneView {
-	_source: TimeLine;
-	_x: Coordinate | null = null;
-	_options: TimeLineOptions;
+  _source: TimeLine;
+  _x: Coordinate | null = null;
+  _options: TimeLineOptions;
 
-	constructor(source: TimeLine, options: TimeLineOptions) {
-		this._source = source;
-		this._options = options;
-	}
-	update() {
-		const timeScale = this._source.chart().timeScale();
-		this._x = timeScale.timeToCoordinate(this._source._p1.time);
-	}
-	renderer() {
-		return new TimeLinePaneRenderer(this._x, this._options);
-	}
+  constructor(source: TimeLine, options: TimeLineOptions) {
+    this._source = source;
+    this._options = options;
+  }
+  update() {
+    const timeScale = this._source.chart().timeScale();
+    this._x = timeScale.timeToCoordinate(this._source._p1.time);
+  }
+  renderer() {
+    return new TimeLinePaneRenderer(this._x, this._options);
+  }
 }
 
 class TimeLineTimeAxisView implements ISeriesPrimitiveAxisView {
-	_source: TimeLine;
-	_x: Coordinate | null = null;
-	_options: TimeLineOptions;
+  _source: TimeLine;
+  _x: Coordinate | null = null;
+  _options: TimeLineOptions;
 
-	constructor(source: TimeLine, options: TimeLineOptions) {
-		this._source = source;
-		this._options = options;
-	}
-	update() {
-		const timeScale = this._source.chart().timeScale();
-		this._x = timeScale.timeToCoordinate(this._source._p1.time);
-	}
-	visible() {
-		return this._options.showLabel;
-	}
-	tickVisible() {
-		return this._options.showLabel;
-	}
-	coordinate() {
-		return this._x ?? 0;
-	}
-	text() {
-		return this._options.labelText;
-	}
-	textColor() {
-		return this._options.labelTextColor;
-	}
-	backColor() {
-		return this._options.labelBackgroundColor;
-	}
+  constructor(source: TimeLine, options: TimeLineOptions) {
+    this._source = source;
+    this._options = options;
+  }
+  update() {
+    const timeScale = this._source.chart().timeScale();
+    this._x = timeScale.timeToCoordinate(this._source._p1.time);
+  }
+  visible() {
+    return this._options.showLabel;
+  }
+  tickVisible() {
+    return this._options.showLabel;
+  }
+  coordinate() {
+    return this._x ?? 0;
+  }
+  text() {
+    return this._options.labelText;
+  }
+  textColor() {
+    return this._options.labelTextColor;
+  }
+  backColor() {
+    return this._options.labelBackgroundColor;
+  }
 }
 
 
 export interface TimeLineOptions {
-	color: string;
-	labelText: string;
-	width: number;
-	labelBackgroundColor: string;
-	labelTextColor: string;
-	showLabel: boolean;
+  color: string;
+  labelText: string;
+  width: number;
+  labelBackgroundColor: string;
+  labelTextColor: string;
+  showLabel: boolean;
 }
 
 const defaultOptions: TimeLineOptions = {
-	color: 'green',
-	labelText: '',
-	width: 3,
-	labelBackgroundColor: 'green',
-	labelTextColor: 'white',
-	showLabel: false,
+  color: 'green',
+  labelText: '',
+  width: 3,
+  labelBackgroundColor: 'green',
+  labelTextColor: 'white',
+  showLabel: false,
 };
 class TimeLine extends PluginBase {
   _p1: Point;

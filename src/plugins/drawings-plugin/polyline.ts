@@ -1,7 +1,7 @@
 import type { CanvasRenderingTarget2D } from 'fancy-canvas';
 
 import {
-  isBusinessDay
+	isBusinessDay
 } from 'lightweight-charts';
 import type {
 	Coordinate,
@@ -11,10 +11,10 @@ import type {
 	IPrimitivePaneRenderer,
 	IPrimitivePaneView,
 	PrimitivePaneViewZOrder,
-  MouseEventParams,
+	MouseEventParams,
 	SeriesType,
 	Time,
-  PrimitiveHoveredItem,
+	PrimitiveHoveredItem,
 } from 'lightweight-charts';
 import { positionsBox } from '../../helpers/dimensions/positions.ts';
 import { point, Point as Point2D } from '@flatten-js/core';
@@ -24,22 +24,22 @@ import { DrawingToolBase, DrawingBase } from './drawing-base.ts';
 import type { Point, ViewPoint } from './drawing-base.ts';
 
 export interface ClassicArrowRenderInfo {
-  arrowWing1: Point2D;
-  arrowBase: Point2D;
-  arrowWing2: Point2D;
+	arrowWing1: Point2D;
+	arrowBase: Point2D;
+	arrowWing2: Point2D;
 }
 
 export function CalculateClassicArrowRenderInfo(lineStart: Point2D, lineEnd: Point2D): ClassicArrowRenderInfo {
-  const p0: Vector2D = new Vector2D(lineStart.x, lineStart.y);
-  const p1: Vector2D = new Vector2D(lineEnd.x, lineEnd.y);
-  
-  let lineDirectionVec = p1.subtract(p0);
+	const p0: Vector2D = new Vector2D(lineStart.x, lineStart.y);
+	const p1: Vector2D = new Vector2D(lineEnd.x, lineEnd.y);
+
+	let lineDirectionVec = p1.subtract(p0);
 	let linePerpendicularVec = new Vector2D(-lineDirectionVec.y, lineDirectionVec.x);
 
-  linePerpendicularVec = linePerpendicularVec.normalize();
+	linePerpendicularVec = linePerpendicularVec.normalize();
 	lineDirectionVec = lineDirectionVec.normalize();
 
-  const defaultArrowLength: number = 35.0;
+	const defaultArrowLength: number = 35.0;
 
 	linePerpendicularVec.x *= defaultArrowLength / Math.sqrt(3.0);
 	linePerpendicularVec.y *= defaultArrowLength / Math.sqrt(3.0);
@@ -52,10 +52,10 @@ export function CalculateClassicArrowRenderInfo(lineStart: Point2D, lineEnd: Poi
 	const arrowWing2 = p1.add(lineDirectionVec.subtract(linePerpendicularVec));
 
 	return {
-    arrowWing1: new Point2D(arrowWing1.x, arrowWing1.y), 
-    arrowBase: new Point2D(arrowBase.x, arrowBase.y), 
-    arrowWing2: new Point2D(arrowWing2.x, arrowWing2.y), 
-  };
+		arrowWing1: new Point2D(arrowWing1.x, arrowWing1.y),
+		arrowBase: new Point2D(arrowBase.x, arrowBase.y),
+		arrowWing2: new Point2D(arrowWing2.x, arrowWing2.y),
+	};
 }
 
 class PolylinePaneRenderer implements IPrimitivePaneRenderer {
@@ -64,9 +64,9 @@ class PolylinePaneRenderer implements IPrimitivePaneRenderer {
 
 	constructor(points: ViewPoint[], fillColor: string) {
 		this._points = new Array<ViewPoint>(points.length);
-    for (let i = 0; i < points.length; i++) {
-      this._points[i] = points[i];
-    }
+		for (let i = 0; i < points.length; i++) {
+			this._points[i] = points[i];
+		}
 		this._fillColor = fillColor;
 	}
 
@@ -75,98 +75,97 @@ class PolylinePaneRenderer implements IPrimitivePaneRenderer {
 			if (this._points.length < 2) {
 				return;
 			}
-			
-      const ctx = scope.context;
-      const calculateDrawingPoint = (point: ViewPoint): ViewPoint =>  {
-        return { 
-          x : Math.round(point.x * scope.horizontalPixelRatio),
-          y : Math.round(point.y * scope.verticalPixelRatio)
-        };
-      };
 
-      for (let i = 0; i < this._points.length; i++) {
-        this._points[i] = calculateDrawingPoint(this._points[i]);
-      }
+			const ctx = scope.context;
+			const calculateDrawingPoint = (point: ViewPoint): ViewPoint => {
+				return {
+					x: Math.round(point.x * scope.horizontalPixelRatio),
+					y: Math.round(point.y * scope.verticalPixelRatio)
+				};
+			};
 
-      ctx.beginPath();
-      ctx.lineWidth = 5;
-      ctx.strokeStyle = this._fillColor;
-      ctx.moveTo(this._points[0].x, this._points[0].y);
-      for (let i = 1; i < this._points.length; i++) {
-        ctx.lineTo(this._points[i].x, this._points[i].y);
-      }
-      ctx.stroke();
+			for (let i = 0; i < this._points.length; i++) {
+				this._points[i] = calculateDrawingPoint(this._points[i]);
+			}
 
-      // drawing arrow
-      // const n = this._points.length;
-      // const p0: Point2D = new Point2D(this._points[n - 2].x, this._points[n - 2].y);
-      // const p1: Point2D = new Point2D(this._points[n - 1].x, this._points[n - 1].y);
-      // const arrowRenderInfo = CalculateClassicArrowRenderInfo(p0, p1);
+			ctx.beginPath();
+			ctx.lineWidth = 5;
+			ctx.strokeStyle = this._fillColor;
+			ctx.moveTo(this._points[0].x, this._points[0].y);
+			for (let i = 1; i < this._points.length; i++) {
+				ctx.lineTo(this._points[i].x, this._points[i].y);
+			}
+			ctx.stroke();
 
-      // ctx.beginPath();
-      // ctx.moveTo(arrowRenderInfo.arrowWing2.x, arrowRenderInfo.arrowWing2.y);
-      // ctx.lineTo(arrowRenderInfo.arrowBase.x, arrowRenderInfo.arrowBase.y);
-      // ctx.lineTo(arrowRenderInfo.arrowWing1.x, arrowRenderInfo.arrowWing1.y);
-      // ctx.stroke();
+			// drawing arrow
+			// const n = this._points.length;
+			// const p0: Point2D = new Point2D(this._points[n - 2].x, this._points[n - 2].y);
+			// const p1: Point2D = new Point2D(this._points[n - 1].x, this._points[n - 1].y);
+			// const arrowRenderInfo = CalculateClassicArrowRenderInfo(p0, p1);
+
+			// ctx.beginPath();
+			// ctx.moveTo(arrowRenderInfo.arrowWing2.x, arrowRenderInfo.arrowWing2.y);
+			// ctx.lineTo(arrowRenderInfo.arrowBase.x, arrowRenderInfo.arrowBase.y);
+			// ctx.lineTo(arrowRenderInfo.arrowWing1.x, arrowRenderInfo.arrowWing1.y);
+			// ctx.stroke();
 		});
 	}
 
-  hitTest(x: number, y: number): PrimitiveHoveredItem | null {
-    if (this._points.length < 2) {
-      return;
-    }
-    
-    let minDist = Infinity;
-    const epsilon: number = 3e-0;
-    for (let i = 1; i < this._points.length; i++) {
-      const s0: Point2D = new Point2D(this._points[i].x, this._points[i].y);
-      const s1: Point2D = new Point2D(this._points[i - 1].x, this._points[i - 1].y);
-      const segment: Segment = new Segment(s0, s1);
-      minDist = Math.min(segment.distanceTo(new Point2D(x, y))[0], minDist);
-    }
+	hitTest(x: number, y: number): PrimitiveHoveredItem | null {
+		if (this._points.length < 2) {
+			return;
+		}
 
-    if (minDist > epsilon) {
-      return null;
-    }
+		let minDist = Infinity;
+		const epsilon: number = 3e-0;
+		for (let i = 1; i < this._points.length; i++) {
+			const s0: Point2D = new Point2D(this._points[i].x, this._points[i].y);
+			const s1: Point2D = new Point2D(this._points[i - 1].x, this._points[i - 1].y);
+			const segment: Segment = new Segment(s0, s1);
+			minDist = Math.min(segment.distanceTo(new Point2D(x, y))[0], minDist);
+		}
 
-    return {
+		if (minDist > epsilon) {
+			return null;
+		}
+
+		return {
 			cursorStyle: "grab",
 			externalId: 'polyline-drawing',
 			zOrder: 'top',
 		};
-  }
+	}
 }
 
 
 class PolylinePaneView implements IPrimitivePaneView {
 	_source: Polyline;
 	_points: Point[];
-  _drawingPoints: ViewPoint[];
+	_drawingPoints: ViewPoint[];
 
 	constructor(source: Polyline) {
 		this._source = source;
-    this._points = source._points;
-    this._drawingPoints = new Array<ViewPoint>(source._points.length);
+		this._points = source._points;
+		this._drawingPoints = new Array<ViewPoint>(source._points.length);
 	}
 
 	update() {
-    this._points = this._source._points;
-    this._drawingPoints = new Array<ViewPoint>(this._source._points.length);
+		this._points = this._source._points;
+		this._drawingPoints = new Array<ViewPoint>(this._source._points.length);
 
 		const series = this._source.series;
 		const timeScale = this._source.chart.timeScale();
-    for (let i = 0; i < this._points.length; ++i) {
-      const x = timeScale.timeToCoordinate(this._points[i].time);
-      const y = series.priceToCoordinate(this._points[i].price);
-      this._drawingPoints[i] = {x: x, y: y};
-    }
+		for (let i = 0; i < this._points.length; ++i) {
+			const x = timeScale.timeToCoordinate(this._points[i].time);
+			const y = series.priceToCoordinate(this._points[i].price);
+			this._drawingPoints[i] = { x: x, y: y };
+		}
 	}
 
 	renderer() {
-    return new PolylinePaneRenderer(
+		return new PolylinePaneRenderer(
 			this._drawingPoints,
-			this._source._options.fillColor
-		);
+			this._source._options.fillColor);
 	}
 }
 
@@ -210,8 +209,8 @@ class RectangleAxisPaneRenderer implements IPrimitivePaneRenderer {
 
 abstract class PolylineAxisPaneView implements IPrimitivePaneView {
 	_source: Polyline;
-  _minPoint: number | null = null;
-  _maxPoint: number | null = null;
+	_minPoint: number | null = null;
+	_maxPoint: number | null = null;
 	_vertical: boolean = false;
 
 	constructor(source: Polyline, vertical: boolean) {
@@ -258,13 +257,13 @@ class PolylineTimeAxisPaneView extends PolylineAxisPaneView {
 
 abstract class PolylineAxisView implements ISeriesPrimitiveAxisView {
 	_source: Polyline;
-  _p: Point;
+	_p: Point;
 	_pos: Coordinate | null = null;
 	constructor(source: Polyline) {
 		this._source = source;
-    this._p = source._points.length > 0 
-    ? source._points[source._points.length - 1]
-    : {time: 0, price: 0};
+		this._p = source._points.length > 0
+			? source._points[source._points.length - 1]
+			: { time: 0, price: 0 };
 	}
 	abstract update(): void;
 	abstract text(): string;
@@ -340,16 +339,16 @@ const defaultOptions: PolylineDrawingToolOptions = {
 };
 
 interface DrawingBounds {
-  _minTime: number;
-  _maxTime: number;
-  _minPrice: number;
-  _maxPrice: number;
+	_minTime: number;
+	_maxTime: number;
+	_minPrice: number;
+	_maxPrice: number;
 }
 
 class Polyline extends DrawingBase<PolylineDrawingToolOptions> {
-  _bounds: DrawingBounds;
+	_bounds: DrawingBounds;
 	_paneViews: PolylinePaneView[];
-	 _timeAxisViews: PolylineTimeAxisView[];
+	_timeAxisViews: PolylineTimeAxisView[];
 	_priceAxisViews: PolylinePriceAxisView[];
 
 	constructor(
@@ -357,11 +356,11 @@ class Polyline extends DrawingBase<PolylineDrawingToolOptions> {
 		options: Partial<PolylineDrawingToolOptions> = {}
 	) {
 		super(points, defaultOptions, options);
-    
-    this._bounds =  {_minTime: 0, _maxTime: 0, _minPrice: 0, _maxPrice: 0};
-    this._points.forEach((point) => {
-      this._updateDrawingBounds(point);
-    })
+
+		this._bounds = { _minTime: 0, _maxTime: 0, _minPrice: 0, _maxPrice: 0 };
+		this._points.forEach((point) => {
+			this._updateDrawingBounds(point);
+		})
 		this._paneViews = [new PolylinePaneView(this)];
 		this._timeAxisViews = [new PolylineTimeAxisView(this)];
 		this._priceAxisViews = [new PolylinePriceAxisView(this)];
@@ -370,17 +369,17 @@ class Polyline extends DrawingBase<PolylineDrawingToolOptions> {
 		// this._timeAxisPaneViews = [new PolylineTimeAxisPaneView(this, false)];
 	}
 
-  public override addPoint(p: Point) {
-    this._updateDrawingBounds(p);
-    this._points.push(p);
-    this.requestUpdate();
-  }
+	public override addPoint(p: Point) {
+		this._updateDrawingBounds(p);
+		this._points.push(p);
+		this.requestUpdate();
+	}
 
-	public override updatePoint(p: Point, index : number) {
-    if (index >= this._points.length || index < 0)
-      return;
+	public override updatePoint(p: Point, index: number) {
+		if (index >= this._points.length || index < 0)
+			return;
 
-    this._points[index] = p;
+		this._points[index] = p;
 		this._paneViews[0].update();
 		this._timeAxisViews[0].movePoint(p);
 		this._priceAxisViews[0].movePoint(p);
@@ -421,24 +420,24 @@ class Polyline extends DrawingBase<PolylineDrawingToolOptions> {
 		this.requestUpdate();
 	}
 
-  hitTest(x: number, y: number): PrimitiveHoveredItem | null {
+	hitTest(x: number, y: number): PrimitiveHoveredItem | null {
 		if (this._paneViews.length > 0) {
 			return this._paneViews[0].renderer()?.hitTest(x, y) ?? null;
 		}
 		return null;
-  }
+	}
 
-  private _updateDrawingBounds(point: Point) {
-    this._bounds._minPrice = Math.min(this._bounds._minPrice, point.price);
-    this._bounds._maxPrice = Math.max(this._bounds._maxPrice, point.price);
+	private _updateDrawingBounds(point: Point) {
+		this._bounds._minPrice = Math.min(this._bounds._minPrice, point.price);
+		this._bounds._maxPrice = Math.max(this._bounds._maxPrice, point.price);
 
-    this._bounds._minTime = Math.min(this._bounds._minTime, point.time);
-    this._bounds._maxTime = Math.max(this._bounds._maxTime, point.time);
-  }
+		this._bounds._minTime = Math.min(this._bounds._minTime, point.time);
+		this._bounds._maxTime = Math.max(this._bounds._maxTime, point.time);
+	}
 }
 
 class PreviewPolyline extends Polyline {
-  constructor(
+	constructor(
 		points: Point[],
 		options: Partial<PolylineDrawingToolOptions> = {}
 	) {
@@ -448,30 +447,29 @@ class PreviewPolyline extends Polyline {
 }
 
 export class PolylineDrawingTool extends DrawingToolBase<
-DrawingBase<PolylineDrawingToolOptions>, 
-DrawingBase<PolylineDrawingToolOptions>, 
-PolylineDrawingToolOptions>
-{
+	DrawingBase<PolylineDrawingToolOptions>,
+	DrawingBase<PolylineDrawingToolOptions>,
+	PolylineDrawingToolOptions> {
 	constructor(
 		chart: IChartApi,
 		series: ISeriesApi<SeriesType>,
 		options: Partial<PolylineDrawingToolOptions>
 	) {
-    super(Polyline, PreviewPolyline, chart, series, defaultOptions, options);
+		super(Polyline, PreviewPolyline, chart, series, defaultOptions, options);
 	}
 
-  protected override _onDblClick(param: MouseEventParams) {
-    if (!this._drawing || !param.point || !param.time || !this._series) return;
-    const price = this._series.coordinateToPrice(param.point.y);
-    if (price === null) {
-      return;
-    }
+	protected override _onDblClick(param: MouseEventParams) {
+		if (!this._drawing || !param.point || !param.time || !this._series) return;
+		const price = this._series.coordinateToPrice(param.point.y);
+		if (price === null) {
+			return;
+		}
 
-    const newPoint: Point = { time: param.time, price };
-    this._addPoint(newPoint);
+		const newPoint: Point = { time: param.time, price };
+		this._addPoint(newPoint);
 
-    this._removePreviewDrawing();
-    this._addNewDrawing(this._points);
-    this.stopDrawing();
-  }
+		this._removePreviewDrawing();
+		this._addNewDrawing(this._points);
+		this.stopDrawing();
+	}
 }

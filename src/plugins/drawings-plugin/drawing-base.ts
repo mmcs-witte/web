@@ -1,10 +1,10 @@
 
 import type {
   Coordinate,
-	IChartApi,
-	ISeriesApi,
-	MouseEventParams,
-	SeriesType,
+  IChartApi,
+  ISeriesApi,
+  MouseEventParams,
+  SeriesType,
   Time,
   PrimitiveHoveredItem,
 } from 'lightweight-charts';
@@ -13,13 +13,13 @@ import { PluginBase } from '../plugin-base.ts';
 import { ensureDefined } from '../../helpers/assertions.ts';
 
 export interface ViewPoint {
-	x: Coordinate | null;
-	y: Coordinate | null;
+  x: Coordinate | null;
+  y: Coordinate | null;
 }
 
 export interface Point {
-	time: Time;
-	price: number;
+  time: Time;
+  price: number;
 }
 
 export class DrawingBase<DrawingOptions> extends PluginBase {
@@ -27,18 +27,18 @@ export class DrawingBase<DrawingOptions> extends PluginBase {
   _points: Point[];
 
   constructor(
-      points: Point[],
-      defaultOptions: DrawingOptions,
-      options: Partial<DrawingOptions> = {}
+    points: Point[],
+    defaultOptions: DrawingOptions,
+    options: Partial<DrawingOptions> = {}
   ) {
     super();
 
     this._points = points;
 
     this._options = {
-			...defaultOptions,
-			...options,
-		};
+      ...defaultOptions,
+      ...options,
+    };
   }
 
   public addPoint(p: Point) {
@@ -46,24 +46,24 @@ export class DrawingBase<DrawingOptions> extends PluginBase {
     this.requestUpdate();
   }
 
-	public updatePoint(p: Point, index : number) {
+  public updatePoint(p: Point, index: number) {
     if (index >= this._points.length || index < 0)
       return;
 
     this._points[index] = p;
-		this.requestUpdate();
-	}
+    this.requestUpdate();
+  }
 
   applyOptions(options: Partial<DrawingOptions>) {
     this._options = { ...this._options, ...options };
     this.requestUpdate();
   }
 
-	hitTest(x: number, y: number): PrimitiveHoveredItem | null {
-		// if (this._paneView) {
-		// 	return this._paneView.renderer()?.hitTest(x, y) ?? null;
-		// }
-		return null;
+  hitTest(x: number, y: number): PrimitiveHoveredItem | null {
+    // if (this._paneView) {
+    // 	return this._paneView.renderer()?.hitTest(x, y) ?? null;
+    // }
+    return null;
   }
 }
 
@@ -71,10 +71,10 @@ export type DrawingConstructor<TOptions, TDrawing extends DrawingBase<TOptions>>
   new (points: Point[], defaults: TOptions, options: Partial<TOptions>) => TDrawing;
 
 export class DrawingToolBase<
-  TDrawing extends DrawingBase<TOptions>, 
+  TDrawing extends DrawingBase<TOptions>,
   TPreviewDrawing extends DrawingBase<TOptions>,
   TOptions,
-  > {
+> {
   protected _chart: IChartApi | undefined;
   protected _series: ISeriesApi<SeriesType> | undefined;
   protected _defaultOptions: TOptions;

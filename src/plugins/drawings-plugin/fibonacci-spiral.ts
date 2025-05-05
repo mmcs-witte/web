@@ -22,73 +22,73 @@ import { positionsBox } from '../../helpers/dimensions/positions.ts';
 import { Point as Point2D, Vector as Vector2D } from '@flatten-js/core';
 import type { Point, ViewPoint } from './drawing-base.ts';
 class FibSpiralPaneRenderer implements IPrimitivePaneRenderer {
-  _fibSpiralRendeInfo: FibSpiralRenderInfo;
-  _lineColor: string;
+	_fibSpiralRendeInfo: FibSpiralRenderInfo;
+	_lineColor: string;
 
 	constructor(renderInfo: FibSpiralRenderInfo, lineColor: string) {
 		this._fibSpiralRendeInfo = renderInfo;
-    this._lineColor = lineColor;
+		this._lineColor = lineColor;
 	}
 
-  draw(target: CanvasRenderingTarget2D) {
-    target.useBitmapCoordinateSpace(scope => {
-      if (this._fibSpiralRendeInfo.numArcs == 0)
-        return;
+	draw(target: CanvasRenderingTarget2D) {
+		target.useBitmapCoordinateSpace(scope => {
+			if (this._fibSpiralRendeInfo.numArcs == 0)
+				return;
 
-      const calculateDrawingPoint = (point: ViewPoint): ViewPoint =>  {
-        if (point.x == null || point.y == null) {
-          return {x: 0, y: 0};
-        }
-        
-        return { 
-          x : Math.round(point.x * scope.horizontalPixelRatio),
-          y : Math.round(point.y * scope.verticalPixelRatio)
-        };
-      };
+			const calculateDrawingPoint = (point: ViewPoint): ViewPoint => {
+				if (point.x == null || point.y == null) {
+					return { x: 0, y: 0 };
+				}
 
-      const degreesToRadian = (degrees: number) : number => {
-        return degrees / 180.0 * Math.PI;
-      }
-      
-      const rotationCenter = calculateDrawingPoint(this._fibSpiralRendeInfo.rotationCenter);
-      const spiralRotationAngle = this._fibSpiralRendeInfo.spiralRotationAngle;
-      const numArcs = this._fibSpiralRendeInfo.numArcs;
-      const arcCenters = this._fibSpiralRendeInfo.arcCenters;
-      const arcRadiuses = this._fibSpiralRendeInfo.arcRadiuses;
-      const arcAngles = this._fibSpiralRendeInfo.arcAngles;
-      const rayStart = calculateDrawingPoint(this._fibSpiralRendeInfo.rayStart);
-      const rayEnd = calculateDrawingPoint(this._fibSpiralRendeInfo.rayEnd);
+				return {
+					x: Math.round(point.x * scope.horizontalPixelRatio),
+					y: Math.round(point.y * scope.verticalPixelRatio)
+				};
+			};
 
-      const ctx = scope.context;
-      ctx.save();
-      ctx.translate(rotationCenter.x, rotationCenter.y);
-      ctx.rotate(spiralRotationAngle);
+			const degreesToRadian = (degrees: number): number => {
+				return degrees / 180.0 * Math.PI;
+			}
 
-      ctx.beginPath();
+			const rotationCenter = calculateDrawingPoint(this._fibSpiralRendeInfo.rotationCenter);
+			const spiralRotationAngle = this._fibSpiralRendeInfo.spiralRotationAngle;
+			const numArcs = this._fibSpiralRendeInfo.numArcs;
+			const arcCenters = this._fibSpiralRendeInfo.arcCenters;
+			const arcRadiuses = this._fibSpiralRendeInfo.arcRadiuses;
+			const arcAngles = this._fibSpiralRendeInfo.arcAngles;
+			const rayStart = calculateDrawingPoint(this._fibSpiralRendeInfo.rayStart);
+			const rayEnd = calculateDrawingPoint(this._fibSpiralRendeInfo.rayEnd);
 
-      ctx.moveTo(rayEnd.x - rotationCenter.x, rayEnd.y - rotationCenter.y);
-      ctx.lineTo(rayStart.x - rotationCenter.x, rayStart.y - rotationCenter.y);
+			const ctx = scope.context;
+			ctx.save();
+			ctx.translate(rotationCenter.x, rotationCenter.y);
+			ctx.rotate(spiralRotationAngle);
 
-      // Draw arcs
-      for (let i = 0; i < numArcs; ++i) {
-          const center = calculateDrawingPoint(arcCenters[i]);
-          const centerX = center.x;
-          const centerY = center.y;
-          const radius = arcRadiuses[i];
-          const startAngle = degreesToRadian(arcAngles[i][0]);
-          const sweepAngle = degreesToRadian(arcAngles[i][1]);
-      
-          ctx.arc(centerX, centerY, 2 * radius, startAngle, startAngle + sweepAngle);
-      }
+			ctx.beginPath();
 
-      ctx.lineWidth = 5;
-      ctx.strokeStyle = this._lineColor;
-      ctx.lineJoin = 'bevel';
-      ctx.stroke();
+			ctx.moveTo(rayEnd.x - rotationCenter.x, rayEnd.y - rotationCenter.y);
+			ctx.lineTo(rayStart.x - rotationCenter.x, rayStart.y - rotationCenter.y);
 
-      ctx.restore(); // Restore transformation
-    });
-  }
+			// Draw arcs
+			for (let i = 0; i < numArcs; ++i) {
+				const center = calculateDrawingPoint(arcCenters[i]);
+				const centerX = center.x;
+				const centerY = center.y;
+				const radius = arcRadiuses[i];
+				const startAngle = degreesToRadian(arcAngles[i][0]);
+				const sweepAngle = degreesToRadian(arcAngles[i][1]);
+
+				ctx.arc(centerX, centerY, 2 * radius, startAngle, startAngle + sweepAngle);
+			}
+
+			ctx.lineWidth = 5;
+			ctx.strokeStyle = this._lineColor;
+			ctx.lineJoin = 'bevel';
+			ctx.stroke();
+
+			ctx.restore(); // Restore transformation
+		});
+	}
 }
 
 class FibSpiralPaneView implements IPrimitivePaneView {
@@ -100,129 +100,127 @@ class FibSpiralPaneView implements IPrimitivePaneView {
 		this._source = source;
 	}
 
-  updateRenderInfo(p1: ViewPoint, p2: ViewPoint): FibSpiralRenderInfo {
-    let spiralRotationCenter = {x: 0, y: 0};
-    let spiralRotationAngle: number = 0;
-    let numArcs: number = 0;
-    let arcCenters: ViewPoint[] = [];
-    let arcRadiuses: number[] = [];
-    let arcAngles: number[][] = [];
-    let rayStart = {x: 0, y: 0};
-    let rayEnd = {x: 0, y: 0};;
-    
-    const pointsAreValid = p1.x != null && p1.y != null && p2.x != null && p2.y != null;
-    const pointAreEqual = pointsAreValid && p1.x == p2.x && p1.y == p2.y;
-    
-	  /// @details Counterclockwise angle from vector lhs to vector rhs
-	  const angleBetweenVectors = (lhs: Vector2D, rhs: Vector2D) =>
-	  {
-		  const dot = lhs.x * rhs.x + lhs.y * rhs.y;			// Dot product between[x1, y1] and [x2, y2]
-		  const det = lhs.x * rhs.y - lhs.y * rhs.x;			// Determinant
-		  return Math.atan2(det, dot);						        // atan2(y, x) or atan2(sin, cos)
-	  }
+	updateRenderInfo(p1: ViewPoint, p2: ViewPoint): FibSpiralRenderInfo {
+		let spiralRotationCenter = { x: 0, y: 0 };
+		let spiralRotationAngle: number = 0;
+		let numArcs: number = 0;
+		let arcCenters: ViewPoint[] = [];
+		let arcRadiuses: number[] = [];
+		let arcAngles: number[][] = [];
+		let rayStart = { x: 0, y: 0 };
+		let rayEnd = { x: 0, y: 0 };;
 
-    const rotateVector = (vec: Vector2D, angle: number) =>
-    {
-      const px = vec.x * Math.cos(angle) - vec.y * Math.sin(angle);
-      const py = vec.x * Math.sin(angle) + vec.y * Math.cos(angle);
-      vec.x = px;
-      vec.y = py;
-      return vec;
-    }
+		const pointsAreValid = p1.x != null && p1.y != null && p2.x != null && p2.y != null;
+		const pointAreEqual = pointsAreValid && p1.x == p2.x && p1.y == p2.y;
 
-    if (pointsAreValid && !pointAreEqual) {
-      const p1: Vector2D = new Vector2D(this._p1.x, this._p1.y);
-      const p2: Vector2D = new Vector2D(this._p2.x, this._p2.y);
+		/// @details Counterclockwise angle from vector lhs to vector rhs
+		const angleBetweenVectors = (lhs: Vector2D, rhs: Vector2D) => {
+			const dot = lhs.x * rhs.x + lhs.y * rhs.y;			// Dot product between[x1, y1] and [x2, y2]
+			const det = lhs.x * rhs.y - lhs.y * rhs.x;			// Determinant
+			return Math.atan2(det, dot);						        // atan2(y, x) or atan2(sin, cos)
+		}
 
-      let initDir = p2.subtract(p1);
+		const rotateVector = (vec: Vector2D, angle: number) => {
+			const px = vec.x * Math.cos(angle) - vec.y * Math.sin(angle);
+			const py = vec.x * Math.sin(angle) + vec.y * Math.cos(angle);
+			vec.x = px;
+			vec.y = py;
+			return vec;
+		}
 
-      spiralRotationAngle = -angleBetweenVectors(initDir, new Vector2D(1, 0));
-      initDir = rotateVector(initDir, -spiralRotationAngle);
+		if (pointsAreValid && !pointAreEqual) {
+			const p1: Vector2D = new Vector2D(this._p1.x, this._p1.y);
+			const p2: Vector2D = new Vector2D(this._p2.x, this._p2.y);
 
-      const rotationCenter: Vector2D = p1;
-      const directionPoint: Vector2D = p1.add(initDir);
+			let initDir = p2.subtract(p1);
 
-      let a: number;
-      {
-        const p1 = new Point2D(rotationCenter.x, rotationCenter.y);
-        const p2 = new Point2D(directionPoint.x, directionPoint.y);
-        a = p1.distanceTo(p2)[0] / (Math.sqrt(55.0) + 1);
-      }
+			spiralRotationAngle = -angleBetweenVectors(initDir, new Vector2D(1, 0));
+			initDir = rotateVector(initDir, -spiralRotationAngle);
 
-      numArcs = 11;
+			const rotationCenter: Vector2D = p1;
+			const directionPoint: Vector2D = p1.add(initDir);
 
-      const bCounterClockwise: boolean = true;
+			let a: number;
+			{
+				const p1 = new Point2D(rotationCenter.x, rotationCenter.y);
+				const p2 = new Point2D(directionPoint.x, directionPoint.y);
+				a = p1.distanceTo(p2)[0] / (Math.sqrt(55.0) + 1);
+			}
 
-      const clockwiseCoef: number = bCounterClockwise ? 1.0 : -1.0;
-      arcCenters = new Array<ViewPoint>(numArcs);
+			numArcs = 11;
 
-      arcCenters[0] = {x: 0.0, y: clockwiseCoef * a};
-      arcCenters[1] = {x: -a, y: clockwiseCoef * a};
-      arcCenters[2] = {x: -a, y: clockwiseCoef * 0.0};
-      arcCenters[3] = {x: a, y: clockwiseCoef * 0.0};
-      arcCenters[4] = {x: a, y: clockwiseCoef * 3.0 * a};
-      arcCenters[5] = {x: -4.0 * a, y: clockwiseCoef * 3.0 * a};
-      arcCenters[6] = {x: -4.0 * a, y: clockwiseCoef * -5.0 * a};
-      arcCenters[7] = {x: 9.0 * a, y: clockwiseCoef * -5.0 * a};
-      arcCenters[8] = {x: 9.0 * a, y: clockwiseCoef * 16.0 * a};
-      arcCenters[9] = {x: -25.0 * a, y: clockwiseCoef * 16.0 * a};
-      arcCenters[10] = {x: -25.0 * a, y: clockwiseCoef * -39.0 * a};
+			const bCounterClockwise: boolean = true;
 
-      arcRadiuses = new Array<number>(numArcs);
-      arcRadiuses[0] = a;
-      arcRadiuses[1] = 2.0 * a;
-      for (let i = 2; i < 11; i++) {
-        arcRadiuses[i] = arcRadiuses[i - 1] + arcRadiuses[i - 2];
-      }
-      
-      arcAngles = new Array<number[]>(numArcs);
-      if (bCounterClockwise) {
-        arcAngles[0] = [270.0, 90.0];
-        arcAngles[1] = [0.0, 90.0];
-        arcAngles[2] = [90.0, 90.0];  
-        arcAngles[3] = [180.0, 90.0];
-        arcAngles[4] = [270.0, 90.0]; 
-        arcAngles[5] = [0.0, 90.0];
-        arcAngles[6] = [90.0, 90.0];
-        arcAngles[7] = [180.0, 90.0];
-        arcAngles[8] = [270.0, 90.0];
-        arcAngles[9] = [0.0, 90.0];
-        arcAngles[10] = [90.0, 90.0];
-      } else {
-        arcAngles[0] = [90.0, -90.0];
-        arcAngles[1] = [360.0, -90.0];
-        arcAngles[2] = [270.0, -90.0];  
-        arcAngles[3] = [180.0, -90.0];
-        arcAngles[4] = [90.0, -90.0]; 
-        arcAngles[5] = [360.0, -90.0];
-        arcAngles[6] = [270.0, -90.0];
-        arcAngles[7] = [180.0, -90.0];
-        arcAngles[8] = [90.0, -90.0];
-        arcAngles[9] = [360.0, -90.0];
-        arcAngles[10] = [270.0, -70.0];
-      }
+			const clockwiseCoef: number = bCounterClockwise ? 1.0 : -1.0;
+			arcCenters = new Array<ViewPoint>(numArcs);
 
-      spiralRotationCenter = {x: p1.x, y: p1.y };
+			arcCenters[0] = { x: 0.0, y: clockwiseCoef * a };
+			arcCenters[1] = { x: -a, y: clockwiseCoef * a };
+			arcCenters[2] = { x: -a, y: clockwiseCoef * 0.0 };
+			arcCenters[3] = { x: a, y: clockwiseCoef * 0.0 };
+			arcCenters[4] = { x: a, y: clockwiseCoef * 3.0 * a };
+			arcCenters[5] = { x: -4.0 * a, y: clockwiseCoef * 3.0 * a };
+			arcCenters[6] = { x: -4.0 * a, y: clockwiseCoef * -5.0 * a };
+			arcCenters[7] = { x: 9.0 * a, y: clockwiseCoef * -5.0 * a };
+			arcCenters[8] = { x: 9.0 * a, y: clockwiseCoef * 16.0 * a };
+			arcCenters[9] = { x: -25.0 * a, y: clockwiseCoef * 16.0 * a };
+			arcCenters[10] = { x: -25.0 * a, y: clockwiseCoef * -39.0 * a };
 
-      rayStart = spiralRotationCenter;
+			arcRadiuses = new Array<number>(numArcs);
+			arcRadiuses[0] = a;
+			arcRadiuses[1] = 2.0 * a;
+			for (let i = 2; i < 11; i++) {
+				arcRadiuses[i] = arcRadiuses[i - 1] + arcRadiuses[i - 2];
+			}
 
-      const bigNumber: number = 3000; // Hack: extending ray beyond the end of the screen
-      rayEnd = {x: directionPoint.x + bigNumber, y: directionPoint.y};
-    }
+			arcAngles = new Array<number[]>(numArcs);
+			if (bCounterClockwise) {
+				arcAngles[0] = [270.0, 90.0];
+				arcAngles[1] = [0.0, 90.0];
+				arcAngles[2] = [90.0, 90.0];
+				arcAngles[3] = [180.0, 90.0];
+				arcAngles[4] = [270.0, 90.0];
+				arcAngles[5] = [0.0, 90.0];
+				arcAngles[6] = [90.0, 90.0];
+				arcAngles[7] = [180.0, 90.0];
+				arcAngles[8] = [270.0, 90.0];
+				arcAngles[9] = [0.0, 90.0];
+				arcAngles[10] = [90.0, 90.0];
+			} else {
+				arcAngles[0] = [90.0, -90.0];
+				arcAngles[1] = [360.0, -90.0];
+				arcAngles[2] = [270.0, -90.0];
+				arcAngles[3] = [180.0, -90.0];
+				arcAngles[4] = [90.0, -90.0];
+				arcAngles[5] = [360.0, -90.0];
+				arcAngles[6] = [270.0, -90.0];
+				arcAngles[7] = [180.0, -90.0];
+				arcAngles[8] = [90.0, -90.0];
+				arcAngles[9] = [360.0, -90.0];
+				arcAngles[10] = [270.0, -70.0];
+			}
 
-    return {
-      rotationCenter: spiralRotationCenter,
-      spiralRotationAngle: spiralRotationAngle,
-      numArcs,
-      arcCenters,
-      arcRadiuses,
-      arcAngles,
-      rayStart,
-      rayEnd,
-    }
-  } 
+			spiralRotationCenter = { x: p1.x, y: p1.y };
 
-  update() {
+			rayStart = spiralRotationCenter;
+
+			const bigNumber: number = 3000; // Hack: extending ray beyond the end of the screen
+			rayEnd = { x: directionPoint.x + bigNumber, y: directionPoint.y };
+		}
+
+		return {
+			rotationCenter: spiralRotationCenter,
+			spiralRotationAngle: spiralRotationAngle,
+			numArcs,
+			arcCenters,
+			arcRadiuses,
+			arcAngles,
+			rayStart,
+			rayEnd,
+		}
+	}
+
+	update() {
 		const series = this._source.series;
 		const y1 = series.priceToCoordinate(this._source._p1.price);
 		const y2 = series.priceToCoordinate(this._source._p2.price);
@@ -384,14 +382,14 @@ class RectanglePriceAxisView extends RectangleAxisView {
 }
 
 export interface FibSpiralRenderInfo {
-  rotationCenter: ViewPoint;
-  rayStart: ViewPoint;
-  rayEnd: ViewPoint;
-  spiralRotationAngle: number;
-  numArcs: number;
-  arcCenters: ViewPoint[];
-  arcRadiuses: number[];
-  arcAngles: number[][];
+	rotationCenter: ViewPoint;
+	rayStart: ViewPoint;
+	rayEnd: ViewPoint;
+	spiralRotationAngle: number;
+	numArcs: number;
+	arcCenters: ViewPoint[];
+	arcRadiuses: number[];
+	arcAngles: number[][];
 }
 
 export interface FibSpiralDrawingToolOptions {
