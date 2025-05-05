@@ -1,6 +1,6 @@
 import type { CanvasRenderingTarget2D, BitmapCoordinatesRenderingScope } from 'fancy-canvas';
 import {
-  isBusinessDay
+	isBusinessDay
 } from 'lightweight-charts';
 import type {
 	Coordinate,
@@ -13,7 +13,7 @@ import type {
 	PrimitivePaneViewZOrder,
 	SeriesType,
 	Time,
-  PrimitiveHoveredItem,
+	PrimitiveHoveredItem,
 } from 'lightweight-charts';
 import { ensureDefined } from '../../helpers/assertions.ts';
 import { PluginBase } from '../plugin-base.ts';
@@ -22,73 +22,14 @@ import { Point as Point2D } from '@flatten-js/core';
 import { Vector as Vector2D } from '@flatten-js/core';
 import { Segment } from '@flatten-js/core';
 import { DrawingBase, DrawingToolBase, type Point, type ViewPoint } from './drawing-base.ts';
+import { MathHelper, type BezierCurvesPointsInfo } from './math-helper.ts';
+import { CollisionHelper } from './collision-helper.ts';
 
-export interface BezierCurvesPointsInfo {
-  endPoints: Point2D[];
-  controlPoints1: Point2D[];
-  controlPoints2: Point2D[];
-};
-
-export function quadraticBezierHitTest(p1: Point2D, p2: Point2D, controlPoint: Point2D, point: Point2D, tolerance: number): boolean {
-  const maxHitTestSegments = 200;
-
-  const len: number = controlPoint.distanceTo(p1)[0] + controlPoint.distanceTo(p2)[0];
-  const step = Math.max(3 / len, 1 / maxHitTestSegments);
-  for (let t = 0; t <= 1; t += step) {
-    if (t > 1) {
-      t = 1;
-    }
-    // (1-t)^2 * P0 + 2t * (1-t) * P1 + t * t *P2
-    // P0 = p1
-    // P1 = p3
-    // P2 = p2
-    const s1 = p1.scale((1 - t) * (1 - t), (1 - t) * (1 - t));
-    const s2 = controlPoint.scale(2 * t * (1 - t), 2 * t * (1 - t));
-    const s3 = p2.scale(t * t, t * t);
-    const currPointOnCurve = new Point2D(s1.x + s2.x + s3.x, s1.y + s2.y + s3.y);
-    if (currPointOnCurve.distanceTo(point)[0] < tolerance)
-      return true;
-
-    if (t == 1)
-      break;
-  }
-  return false;
-}
-
-	// @details Fill cubic Bezier curve points for a curve connecting point1, point2, point3
-export function getCubicBezierCurveDrawingPoints(vertex1: Point2D, apex: Point2D, vertex2: Point2D): BezierCurvesPointsInfo
-	{
-    const p1 = new Vector2D(vertex1.x, vertex1.y);
-    const p2 = new Vector2D(apex.x, apex.y);
-    const p3 = new Vector2D(vertex2.x, vertex2.y);
-
-		const dir: Vector2D = p1.subtract(p3);
-
-		const controlPointOffset: number = 0.25;
-		const cp1 = p2.add(dir.scale(controlPointOffset, controlPointOffset));
-		const cp2 = p2.subtract(dir.scale(controlPointOffset, controlPointOffset));
-
-		const controlPoint0_0 = p1.add((cp1.subtract(p1)).scale(2.0 / 3.0, 2.0 / 3.0));
-		const controlPoint1_0 = p2.add((cp1.subtract(p2)).scale(2.0 / 3.0, 2.0 / 3.0));
-
-		const controlPoint0_1 = p2.add(cp2.subtract(p2).scale(2.0 / 3.0, 2.0 / 3.0));
-		const controlPoint1_1 = p3.add(cp2.subtract(p3).scale(2.0 / 3.0, 2.0 / 3.0));
-
-    const vectorToPoint = (v: Vector2D) => {
-      return new Point2D(v.x, v.y);
-    }
-
-		const endPoints: Point2D[] = [ vectorToPoint(p1), vectorToPoint(p2), vectorToPoint(p3) ];
-		const controlPoints1: Point2D[] = [ vectorToPoint(controlPoint0_0), vectorToPoint(controlPoint0_1)];
-		const controlPoints2: Point2D[] = [ vectorToPoint(controlPoint1_0), vectorToPoint(controlPoint1_1)];
-
-		return { endPoints, controlPoints1, controlPoints2 };
-}
 
 export function fillBezierPath(renderingScope: BitmapCoordinatesRenderingScope, bezierCurveInfo: BezierCurvesPointsInfo, fillColor: string) {
-  const ctx = renderingScope.context;
+	const ctx = renderingScope.context;
 
-  const bezierSplines: Point2D[] = Array<Point2D>(bezierCurveInfo.endPoints.length + bezierCurveInfo.controlPoints1.length + bezierCurveInfo.controlPoints2.length);
+	const bezierSplines: Point2D[] = Array<Point2D>(bezierCurveInfo.endPoints.length + bezierCurveInfo.controlPoints1.length + bezierCurveInfo.controlPoints2.length);
 	/// ------------------------------------------------------------------
 	/// bezierSplines array structure: 
 	/// 
@@ -101,10 +42,10 @@ export function fillBezierPath(renderingScope: BitmapCoordinatesRenderingScope, 
 	/// ------------------------------------------------------------------
 
 	let i = 0;
-  bezierCurveInfo.endPoints.forEach((point) => {
+	bezierCurveInfo.endPoints.forEach((point) => {
 		bezierSplines[i] = point;
 		i += 3;
-  });
+	});
 
 	i = 1;
 	for (let j = 0; j < bezierCurveInfo.controlPoints1.length; ++j) {
@@ -112,18 +53,18 @@ export function fillBezierPath(renderingScope: BitmapCoordinatesRenderingScope, 
 		bezierSplines[i + 1] = bezierCurveInfo.controlPoints2[j];
 		i += 3;
 	}
-  ctx.beginPath();
-  ctx.fillStyle = fillColor;
-  
-  for (let i = 0; i + 3 < bezierSplines.length; i += 3) {
-    ctx.moveTo(bezierSplines[i].x, bezierSplines[i].y);
-    ctx.bezierCurveTo(bezierSplines[i + 1].x, bezierSplines[i + 1].y, 
-      bezierSplines[i + 2].x, bezierSplines[i + 2].y,
-      bezierSplines[i + 3].x, bezierSplines[i + 3].y);
-  }
-  ctx.lineTo(bezierSplines[0].x, bezierSplines[0].y);
-  ctx.closePath();
-  ctx.fill();
+	ctx.beginPath();
+	ctx.fillStyle = fillColor;
+
+	for (let i = 0; i + 3 < bezierSplines.length; i += 3) {
+		ctx.moveTo(bezierSplines[i].x, bezierSplines[i].y);
+		ctx.bezierCurveTo(bezierSplines[i + 1].x, bezierSplines[i + 1].y,
+			bezierSplines[i + 2].x, bezierSplines[i + 2].y,
+			bezierSplines[i + 3].x, bezierSplines[i + 3].y);
+	}
+	ctx.lineTo(bezierSplines[0].x, bezierSplines[0].y);
+	ctx.closePath();
+	ctx.fill();
 }
 
 class CurvePaneRenderer implements IPrimitivePaneRenderer {
@@ -131,10 +72,10 @@ class CurvePaneRenderer implements IPrimitivePaneRenderer {
 	_fillColor: string;
 
 	constructor(points: ViewPoint[], fillColor: string) {
-    this._points = new Array<ViewPoint>(points.length);
-    for (let i = 0; i < points.length; i++) {
-      this._points[i] = points[i];
-    }
+		this._points = new Array<ViewPoint>(points.length);
+		for (let i = 0; i < points.length; i++) {
+			this._points[i] = points[i];
+		}
 		this._fillColor = fillColor;
 	}
 
@@ -143,99 +84,98 @@ class CurvePaneRenderer implements IPrimitivePaneRenderer {
 			if (this._points.length < 2) {
 				return;
 			}
-			
-      const ctx = scope.context;
-      const calculateDrawingPoint = (point: ViewPoint): ViewPoint =>  {
-        return { 
-          x : Math.round(point.x * scope.horizontalPixelRatio),
-          y : Math.round(point.y * scope.verticalPixelRatio)
-        };
-      };
 
-      for (let i = 0; i < this._points.length; i++) {
-        this._points[i] = calculateDrawingPoint(this._points[i]);
-      }
+			const ctx = scope.context;
+			const calculateDrawingPoint = (point: ViewPoint): ViewPoint => {
+				return {
+					x: Math.round(point.x * scope.horizontalPixelRatio),
+					y: Math.round(point.y * scope.verticalPixelRatio)
+				};
+			};
 
-			if (this._points.length < 3)
-			{
+			for (let i = 0; i < this._points.length; i++) {
+				this._points[i] = calculateDrawingPoint(this._points[i]);
+			}
+
+			if (this._points.length < 3) {
 				ctx.beginPath();
 				ctx.moveTo(this._points[0].x, this._points[0].y);
-        ctx.lineTo(this._points[1].x, this._points[1].y);
-        ctx.strokeStyle = this._fillColor;
-        ctx.lineWidth = scope.verticalPixelRatio;
+				ctx.lineTo(this._points[1].x, this._points[1].y);
+				ctx.strokeStyle = this._fillColor;
+				ctx.lineWidth = scope.verticalPixelRatio;
 				ctx.stroke();
 			}
 			else {
-        const bezierCurveInfo = getCubicBezierCurveDrawingPoints(
-          new Point2D(this._points[0].x, this._points[0].y),
-          new Point2D(this._points[2].x, this._points[2].y),
-          new Point2D(this._points[1].x, this._points[1].y),
-        );
+				const bezierCurveInfo = MathHelper.GetCubicBezierCurveDrawingPoints(
+					new Point2D(this._points[0].x, this._points[0].y),
+					new Point2D(this._points[2].x, this._points[2].y),
+					new Point2D(this._points[1].x, this._points[1].y),
+				);
 				fillBezierPath(scope, bezierCurveInfo, this._fillColor);
 			}
 		});
 	}
 
-  hitTest(x: number, y: number): PrimitiveHoveredItem | null {
-    if (this._points.length < 3) {
-      return;
-    }
-    const vertex1: Vector2D = new Vector2D(this._points[0].x, this._points[0].y);
-    const vertex2: Vector2D = new Vector2D(this._points[1].x, this._points[1].y);
-    const coVertex: Vector2D = new Vector2D(this._points[2].x, this._points[2].y);
-		
+	hitTest(x: number, y: number): PrimitiveHoveredItem | null {
+		if (this._points.length < 3) {
+			return;
+		}
+		const vertex1: Vector2D = new Vector2D(this._points[0].x, this._points[0].y);
+		const vertex2: Vector2D = new Vector2D(this._points[1].x, this._points[1].y);
+		const coVertex: Vector2D = new Vector2D(this._points[2].x, this._points[2].y);
+
 		const dir: Vector2D = vertex1.subtract(vertex2);
 		const controlPoint1: Vector2D = coVertex.add(dir.scale(0.25, 0.25));
 		const controlPoint2: Vector2D = coVertex.subtract(dir.scale(0.25, 0.25));
 
-    const epsilon: number = 3e-0;
+		const epsilon: number = 3e-0;
 
-    const currPoint = new Point2D(x, y);
-		const hitFirstHalf = quadraticBezierHitTest(new Point2D(vertex1.x, vertex1.y), new Point2D(coVertex.x, coVertex.y), new Point2D(controlPoint1.x, controlPoint1.y), currPoint, epsilon);
-		const hitSecondHalf = quadraticBezierHitTest(new Point2D(coVertex.x, coVertex.y), new Point2D(vertex2.x, vertex2.y), new Point2D(controlPoint2.x, controlPoint2.y), currPoint, epsilon);
+		const currPoint = new Point2D(x, y);
+		const hitFirstHalf = CollisionHelper.HitTestQuadraticBezierCurve(new Point2D(vertex1.x, vertex1.y), new Point2D(coVertex.x, coVertex.y), new Point2D(controlPoint1.x, controlPoint1.y), currPoint, epsilon);
+		const hitSecondHalf = CollisionHelper.HitTestQuadraticBezierCurve(new Point2D(coVertex.x, coVertex.y), new Point2D(vertex2.x, vertex2.y), new Point2D(controlPoint2.x, controlPoint2.y), currPoint, epsilon);
 
-    if (!hitFirstHalf && !hitSecondHalf) {
-      return null;
-    }
+		if (!hitFirstHalf && !hitSecondHalf) {
+			return null;
+		}
 
-    return {
-      cursorStyle: "grab",
-      externalId: 'curve-drawing',
-      zOrder: 'top',
-    };
-  }
+		return {
+			cursorStyle: "grab",
+			externalId: 'curve-drawing',
+			zOrder: 'top',
+		};
+	}
 }
 
 class CurvePaneView implements IPrimitivePaneView {
-  _source: Curve;
-  _points: Point[];
-  _drawingPoints: ViewPoint[];
+	_source: Curve;
+	_points: Point[];
+	_drawingPoints: ViewPoint[];
 
-  constructor(source: Curve) {
-    this._source = source;
-    this._points = source._points;
-    this._drawingPoints = new Array<ViewPoint>(source._points.length);
-  }
+	constructor(source: Curve) {
+		this._source = source;
+		this._points = source._points;
+		this._drawingPoints = new Array<ViewPoint>(source._points.length);
+	}
 
-  update() {
-    this._points = this._source._points;
-    this._drawingPoints = new Array<ViewPoint>(this._source._points.length);
+	update() {
+		this._points = this._source._points;
+		this._drawingPoints = new Array<ViewPoint>(this._source._points.length);
 
-    const series = this._source.series;
-    const timeScale = this._source.chart.timeScale();
-    for (let i = 0; i < this._points.length; ++i) {
-      const x = timeScale.timeToCoordinate(this._points[i].time);
-      const y = series.priceToCoordinate(this._points[i].price);
-      this._drawingPoints[i] = {x: x, y: y};
-    }
-  }
+		const series = this._source.series;
+		const timeScale = this._source.chart.timeScale();
+		for (let i = 0; i < this._points.length; ++i) {
+			const x = timeScale.timeToCoordinate(this._points[i].time);
+			const y = series.priceToCoordinate(this._points[i].price);
+			this._drawingPoints[i] = { x: x, y: y };
+		}
+	}
 
-  renderer() {
-    return new CurvePaneRenderer(
-      this._drawingPoints,
-      this._source._options.fillColor
-    );
-  }
+	renderer() {
+		return new CurvePaneRenderer(
+			this._drawingPoints,
+			this._source._options.fillColor
+		);
+	}
 }
 
 class CurveAxisPaneRenderer implements IPrimitivePaneRenderer {
@@ -264,10 +204,10 @@ class CurveAxisPaneRenderer implements IPrimitivePaneRenderer {
 			if (this._p1 === null || this._p2 === null || this._p3 === null) return;
 			const ctx = scope.context;
 			ctx.globalAlpha = 0.5;
-			
-      const posStart: number = Math.min(this._p1, Math.min(this._p2, this._p3));
-      const posEnd: number = Math.max(this._p1, Math.max(this._p2, this._p3));
-      const positions = positionsBox(
+
+			const posStart: number = Math.min(this._p1, Math.min(this._p2, this._p3));
+			const posEnd: number = Math.max(this._p1, Math.max(this._p2, this._p3));
+			const positions = positionsBox(
 				posStart,
 				posEnd,
 				this._vertical ? scope.verticalPixelRatio : scope.horizontalPixelRatio
@@ -418,18 +358,18 @@ const defaultOptions: CurveDrawingToolOptions = {
 
 class Curve extends DrawingBase<CurveDrawingToolOptions> {
 	_paneViews: CurvePaneView[];
-  // TODO: rewrite commented classes 
+	// TODO: rewrite commented classes 
 	// _timeAxisViews: CurveTimeAxisView[];
 	// _priceAxisViews: CurvePriceAxisView[];
 	// _priceAxisPaneViews: CurvePriceAxisPaneView[];
 	// _timeAxisPaneViews: CurveTimeAxisPaneView[];
 
-  constructor(
-    points: Point[],
-    options: Partial<CurveDrawingToolOptions> = {}
-  ) {
-    super(points, defaultOptions, options);
-    
+	constructor(
+		points: Point[],
+		options: Partial<CurveDrawingToolOptions> = {}
+	) {
+		super(points, defaultOptions, options);
+
 		this._paneViews = [new CurvePaneView(this)];
 		// this._timeAxisViews = [
 		// 	new CurveTimeAxisView(this, this._p1),
@@ -443,68 +383,68 @@ class Curve extends DrawingBase<CurveDrawingToolOptions> {
 		// ];
 		// this._priceAxisPaneViews = [new CurvePriceAxisPaneView(this, true)];
 		// this._timeAxisPaneViews = [new CurveTimeAxisPaneView(this, false)];
-  }
+	}
 
-  public override addPoint(p: Point) {
-    this._points.push(p);
-    this.requestUpdate();
-  }
+	public override addPoint(p: Point) {
+		this._points.push(p);
+		this.requestUpdate();
+	}
 
-  public override updatePoint(p: Point, index : number) {
-    if (index >= this._points.length || index < 0)
-      return;
+	public override updatePoint(p: Point, index: number) {
+		if (index >= this._points.length || index < 0)
+			return;
 
-    this._points[index] = p;
-    this._paneViews[0].update();
-    // this._timeAxisViews[0].movePoint(p);
-    // this._priceAxisViews[0].movePoint(p);
+		this._points[index] = p;
+		this._paneViews[0].update();
+		// this._timeAxisViews[0].movePoint(p);
+		// this._priceAxisViews[0].movePoint(p);
 
-    this.requestUpdate();
-  }
+		this.requestUpdate();
+	}
 
-  updateAllViews() {
-    this._paneViews.forEach(pw => pw.update());
-    // this._timeAxisViews.forEach(pw => pw.update());
-    // this._priceAxisViews.forEach(pw => pw.update());
-    // this._priceAxisPaneViews.forEach(pw => pw.update());
-    // this._timeAxisPaneViews.forEach(pw => pw.update());
-  }
+	updateAllViews() {
+		this._paneViews.forEach(pw => pw.update());
+		// this._timeAxisViews.forEach(pw => pw.update());
+		// this._priceAxisViews.forEach(pw => pw.update());
+		// this._priceAxisPaneViews.forEach(pw => pw.update());
+		// this._timeAxisPaneViews.forEach(pw => pw.update());
+	}
 
-  // priceAxisViews() {
-  //   return this._priceAxisViews;
-  // }
+	// priceAxisViews() {
+	//   return this._priceAxisViews;
+	// }
 
-  // timeAxisViews() {
-  //   return this._timeAxisViews;
-  // }
+	// timeAxisViews() {
+	//   return this._timeAxisViews;
+	// }
 
-  paneViews() {
-    return this._paneViews;
-  }
+	paneViews() {
+		return this._paneViews;
+	}
 
-  // priceAxisPaneViews() {
-  // 	return this._priceAxisPaneViews;
-  // }
+	// priceAxisPaneViews() {
+	// 	return this._priceAxisPaneViews;
+	// }
 
-  // timeAxisPaneViews() {
-  // 	return this._timeAxisPaneViews;
-  // }
+	// timeAxisPaneViews() {
+	// 	return this._timeAxisPaneViews;
+	// }
 
-  applyOptions(options: Partial<CurveDrawingToolOptions>) {
-    this._options = { ...this._options, ...options };
-    this.requestUpdate();
-  }
+	applyOptions(options: Partial<CurveDrawingToolOptions>) {
+		this._options = { ...this._options, ...options };
+		this.requestUpdate();
+	}
 
-  hitTest(x: number, y: number): PrimitiveHoveredItem | null {
+	hitTest(x: number, y: number): PrimitiveHoveredItem | null {
 		if (this._paneViews.length > 0) {
 			return this._paneViews[0].renderer()?.hitTest(x, y) ?? null;
 		}
 		return null;
-  }
+	}
 }
 
 class PreviewCurve extends Curve {
-  constructor(
+	constructor(
 		points: Point[],
 		options: Partial<CurveDrawingToolOptions> = {}
 	) {
@@ -514,36 +454,35 @@ class PreviewCurve extends Curve {
 }
 
 export class CurveDrawingTool extends DrawingToolBase<
-  DrawingBase<CurveDrawingToolOptions>, 
-  DrawingBase<CurveDrawingToolOptions>, 
-  CurveDrawingToolOptions>
-{
-  constructor(
-    chart: IChartApi,
-    series: ISeriesApi<SeriesType>,
-    options: Partial<CurveDrawingToolOptions>
-  ) {
-    super(Curve, PreviewCurve, chart, series, defaultOptions, options);
-  }
+	DrawingBase<CurveDrawingToolOptions>,
+	DrawingBase<CurveDrawingToolOptions>,
+	CurveDrawingToolOptions> {
+	constructor(
+		chart: IChartApi,
+		series: ISeriesApi<SeriesType>,
+		options: Partial<CurveDrawingToolOptions>
+	) {
+		super(Curve, PreviewCurve, chart, series, defaultOptions, options);
+	}
 
-  	protected override _onClick(param: MouseEventParams) {
+	protected override _onClick(param: MouseEventParams) {
 		if (!this._drawing || !param.point || !param.time || !this._series) return;
 		const price = this._series.coordinateToPrice(param.point.y);
 		if (price === null) {
 			return;
 		}
 
-    const newPoint: Point = { time: param.time, price };
-    if (this._points.length == 3) {
-      this._removePreviewDrawing();
-      this._addNewDrawing(this._points);
-      this.stopDrawing();
-    } else {
-      this._addPoint(newPoint);
-      if (this._previewDrawing == null) {
-        this._addPoint(newPoint);
-        this._addPreviewDrawing(this._points);
-      }
-    }
+		const newPoint: Point = { time: param.time, price };
+		if (this._points.length == 3) {
+			this._removePreviewDrawing();
+			this._addNewDrawing(this._points);
+			this.stopDrawing();
+		} else {
+			this._addPoint(newPoint);
+			if (this._previewDrawing == null) {
+				this._addPoint(newPoint);
+				this._addPreviewDrawing(this._points);
+			}
+		}
 	}
 }

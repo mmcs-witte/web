@@ -22,6 +22,7 @@ import { positionsBox } from '../../helpers/dimensions/positions.ts';
 import { Point as Point2D } from '@flatten-js/core';
 import { Vector as Vector2D } from '@flatten-js/core';
 import type { Point, ViewPoint } from './drawing-base.ts';
+import { MathHelper } from './math-helper.ts';
 
 export interface AnnulusSectorRenderInfo {
 	annulusCenter: Point2D;
@@ -30,24 +31,6 @@ export interface AnnulusSectorRenderInfo {
 	startAngle: number;
 	sweepAngle: number;
 }
-
-
-// TODO: move it to our new math helper
-/// @details Counterclockwise angle from vector lhs to vector rhs
-export function AngleBetweenVectors(lhs: Vector2D, rhs: Vector2D): number {
-	const dot = lhs.x * rhs.x + lhs.y * rhs.y;			// Dot product between[x1, y1] and [x2, y2]
-	const det = lhs.x * rhs.y - lhs.y * rhs.x;			// Determinant
-	return Math.atan2(det, dot);						        // atan2(y, x) or atan2(sin, cos)
-}
-
-export function RotateVector(vec: Vector2D, angle: number) {
-	const px = vec.x * Math.cos(angle) - vec.y * Math.sin(angle);
-	const py = vec.x * Math.sin(angle) + vec.y * Math.cos(angle);
-	vec.x = px;
-	vec.y = py;
-	return vec;
-}
-
 
 export function fillAnnulusSector(renderingScope: BitmapCoordinatesRenderingScope, annulusRenderInfo: AnnulusSectorRenderInfo, fillColor: string, lineColor: string) {
 	const ctx = renderingScope.context;
@@ -63,7 +46,7 @@ export function fillAnnulusSector(renderingScope: BitmapCoordinatesRenderingScop
 	const centerVec = new Vector2D(center.x, center.y);
 
 	let r2 = new Vector2D(radiusSmall, 0);
-	r2 = centerVec.add(RotateVector(r2, angleEnd));
+	r2 = centerVec.add(MathHelper.RotateVector(r2, angleEnd));
 
 	const isClockwise: boolean = annulusRenderInfo.sweepAngle < 0;
 
@@ -99,8 +82,8 @@ export function drawFibWedge(renderingScope: BitmapCoordinatesRenderingScope, po
 	const trendLineVec2: Vector2D = p2.subtract(p0);
 
 	const radius = points[0].distanceTo(points[1])[0];
-	const startAngle = AngleBetweenVectors(new Vector2D(1.0, 0.0), trendLineVec1);
-	const sweepAngle = AngleBetweenVectors(trendLineVec1, trendLineVec2);
+	const startAngle = MathHelper.AngleBetweenVectors(new Vector2D(1.0, 0.0), trendLineVec1);
+	const sweepAngle = MathHelper.AngleBetweenVectors(trendLineVec1, trendLineVec2);
 	const annulusCenter = points[0];
 
 	for (let i = 1; i < fibonacciLevels.length; i++) {

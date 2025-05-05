@@ -21,6 +21,7 @@ import { PluginBase } from '../plugin-base.ts';
 import { positionsBox } from '../../helpers/dimensions/positions.ts';
 import { Point as Point2D, Vector as Vector2D } from '@flatten-js/core';
 import type { Point, ViewPoint } from './drawing-base.ts';
+import { MathHelper } from './math-helper.ts';
 class FibSpiralPaneRenderer implements IPrimitivePaneRenderer {
 	_fibSpiralRendeInfo: FibSpiralRenderInfo;
 	_lineColor: string;
@@ -113,29 +114,14 @@ class FibSpiralPaneView implements IPrimitivePaneView {
 		const pointsAreValid = p1.x != null && p1.y != null && p2.x != null && p2.y != null;
 		const pointAreEqual = pointsAreValid && p1.x == p2.x && p1.y == p2.y;
 
-		/// @details Counterclockwise angle from vector lhs to vector rhs
-		const angleBetweenVectors = (lhs: Vector2D, rhs: Vector2D) => {
-			const dot = lhs.x * rhs.x + lhs.y * rhs.y;			// Dot product between[x1, y1] and [x2, y2]
-			const det = lhs.x * rhs.y - lhs.y * rhs.x;			// Determinant
-			return Math.atan2(det, dot);						        // atan2(y, x) or atan2(sin, cos)
-		}
-
-		const rotateVector = (vec: Vector2D, angle: number) => {
-			const px = vec.x * Math.cos(angle) - vec.y * Math.sin(angle);
-			const py = vec.x * Math.sin(angle) + vec.y * Math.cos(angle);
-			vec.x = px;
-			vec.y = py;
-			return vec;
-		}
-
 		if (pointsAreValid && !pointAreEqual) {
 			const p1: Vector2D = new Vector2D(this._p1.x, this._p1.y);
 			const p2: Vector2D = new Vector2D(this._p2.x, this._p2.y);
 
 			let initDir = p2.subtract(p1);
 
-			spiralRotationAngle = -angleBetweenVectors(initDir, new Vector2D(1, 0));
-			initDir = rotateVector(initDir, -spiralRotationAngle);
+			spiralRotationAngle = -1 * MathHelper.AngleBetweenVectors(initDir, new Vector2D(1, 0));
+			initDir = MathHelper.RotateVector(initDir, -spiralRotationAngle);
 
 			const rotationCenter: Vector2D = p1;
 			const directionPoint: Vector2D = p1.add(initDir);
