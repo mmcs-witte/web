@@ -119,7 +119,7 @@ export class DrawingBase<DrawingOptions> extends PluginBase {
     return null;
   }
 
-  private _updateDrawingBounds(point: Point) {
+  protected _updateDrawingBounds(point: Point) {
 		this._bounds._minPrice = this._bounds._minPrice == null ? point.price : Math.min(this._bounds._minPrice, point.price);
 		this._bounds._maxPrice = this._bounds._maxPrice == null ? point.price : Math.max(this._bounds._maxPrice, point.price);
 

@@ -374,14 +374,22 @@ class Curve extends DrawingBase<CurveDrawingToolOptions> {
 		this._timeAxisPaneViews = [new CurveTimeAxisPaneView(this, false)];
 	}
 
+	public override addPoint(p: Point) {
+		this._updateDrawingBounds(p);
+		this._points.push(p);
+		this._timeAxisViews.push(new CurveTimeAxisView(this, p));
+		this._priceAxisViews.push(new CurvePriceAxisView(this, p));
+		this.requestUpdate();
+	  }
+
 	public override updatePoint(p: Point, index: number) {
 		if (index >= this._points.length || index < 0)
 			return;
 
 		this._points[index] = p;
 		this._paneViews[0].update();
-		// this._timeAxisViews[index].movePoint(p);
-		// this._priceAxisViews[index].movePoint(p);
+		this._priceAxisViews[index].movePoint(p);
+		this._timeAxisViews[index].movePoint(p);
 
 		this.requestUpdate();
 	}
@@ -457,18 +465,17 @@ export class CurveDrawingTool extends DrawingToolBase<
 		}
 
 		const newPoint: Point = { time: param.time, price };
-		if (this._pointsCache.length > 3) {
-			this._removePreviewDrawing();
-			this._addNewDrawing(this._pointsCache.slice(0, 3));
-			this.stopDrawing();
+		if (this._previewDrawing == null) {
+			this._addPointToCache(newPoint);
+			this._addPointToCache(newPoint);
+			this._addPreviewDrawing(this._pointsCache);
 		} else {
-			if (this._previewDrawing == null) {
-				this._addPointToCache(newPoint);
-				this._addPointToCache(newPoint);
-				this._addPreviewDrawing(this._pointsCache);
-			} else {
-				this._addPointToCache(newPoint);
-				this._previewDrawing.addPoint(newPoint);
+			this._addPointToCache(newPoint);
+			this._previewDrawing.addPoint(newPoint);
+			if (this._pointsCache.length > 3) {
+				this._removePreviewDrawing();
+				this._addNewDrawing(this._pointsCache.slice(0, 3));
+				this.stopDrawing();
 			}
 		}
 	}
