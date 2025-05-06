@@ -1,4 +1,6 @@
 
+import type { CanvasRenderingTarget2D } from 'fancy-canvas';
+
 import type {
   Coordinate,
   IChartApi,
@@ -7,10 +9,12 @@ import type {
   SeriesType,
   Time,
   PrimitiveHoveredItem,
+  IPrimitivePaneRenderer,
 } from 'lightweight-charts';
 
 import { PluginBase } from '../plugin-base.ts';
 import { ensureDefined } from '../../helpers/assertions.ts';
+import { positionsBox } from '../../helpers/dimensions/positions.ts';
 
 export interface ViewPoint {
   x: Coordinate | null;
@@ -22,9 +26,56 @@ export interface Point {
   price: number;
 }
 
+export interface DrawingBounds {
+  _minTime: number | null;
+  _maxTime: number | null;
+  _minPrice: number | null;
+  _maxPrice: number | null;
+}
+
+export class RectangleAxisPaneRenderer implements IPrimitivePaneRenderer {
+  _p1: number | null;
+  _p2: number | null;
+  _fillColor: string;
+  _vertical: boolean = false;
+
+  constructor(
+    p1: number | null,
+    p2: number | null,
+    fillColor: string,
+    vertical: boolean
+  ) {
+    this._p1 = p1;
+    this._p2 = p2;
+    this._fillColor = fillColor;
+    this._vertical = vertical;
+  }
+
+  draw(target: CanvasRenderingTarget2D) {
+    target.useBitmapCoordinateSpace(scope => {
+      if (this._p1 === null || this._p2 === null) return;
+      const ctx = scope.context;
+      ctx.globalAlpha = 0.5;
+      const positions = positionsBox(
+        this._p1,
+        this._p2,
+        this._vertical ? scope.verticalPixelRatio : scope.horizontalPixelRatio
+      );
+      ctx.fillStyle = this._fillColor;
+      if (this._vertical) {
+        ctx.fillRect(0, positions.position, 15, positions.length);
+      } else {
+        ctx.fillRect(positions.position, 0, positions.length, 15);
+      }
+    });
+  }
+}
+
+
 export class DrawingBase<DrawingOptions> extends PluginBase {
   _options: DrawingOptions;
   _points: Point[];
+	_bounds: DrawingBounds;
 
   constructor(
     points: Point[],
@@ -32,8 +83,12 @@ export class DrawingBase<DrawingOptions> extends PluginBase {
     options: Partial<DrawingOptions> = {}
   ) {
     super();
-
     this._points = points;
+
+    this._bounds = { _minTime: null, _maxTime: null, _minPrice: null, _maxPrice: null };
+		this._points.forEach((point) => {
+			this._updateDrawingBounds(point);
+		})
 
     this._options = {
       ...defaultOptions,
@@ -42,6 +97,7 @@ export class DrawingBase<DrawingOptions> extends PluginBase {
   }
 
   public addPoint(p: Point) {
+    this._updateDrawingBounds(p);
     this._points.push(p);
     this.requestUpdate();
   }
@@ -60,11 +116,16 @@ export class DrawingBase<DrawingOptions> extends PluginBase {
   }
 
   hitTest(x: number, y: number): PrimitiveHoveredItem | null {
-    // if (this._paneView) {
-    // 	return this._paneView.renderer()?.hitTest(x, y) ?? null;
-    // }
     return null;
   }
+
+  private _updateDrawingBounds(point: Point) {
+		this._bounds._minPrice = this._bounds._minPrice == null ? point.price : Math.min(this._bounds._minPrice, point.price);
+		this._bounds._maxPrice = this._bounds._maxPrice == null ? point.price : Math.max(this._bounds._maxPrice, point.price);
+
+		this._bounds._minTime = this._bounds._minTime == null ? point.time : Math.min(this._bounds._minTime, point.time);
+		this._bounds._maxTime = this._bounds._maxTime == null ? point.time : Math.max(this._bounds._maxTime, point.time);
+	}
 }
 
 export type DrawingConstructor<TOptions, TDrawing extends DrawingBase<TOptions>> =
@@ -81,7 +142,7 @@ export class DrawingToolBase<
   protected _options: Partial<TOptions>;
   protected _drawings: TDrawing[];
   protected _previewDrawing: TPreviewDrawing | undefined = undefined;
-  protected _points: Point[] = [];
+  protected _pointsCache: Point[] = [];
   protected _drawing: boolean = false;
 
   constructor(
@@ -124,12 +185,12 @@ export class DrawingToolBase<
 
   startDrawing(): void {
     this._drawing = true;
-    this._points = [];
+    this._pointsCache = [];
   }
 
   stopDrawing(): void {
     this._drawing = false;
-    this._points = [];
+    this._pointsCache = [];
   }
 
   isDrawing(): boolean {
@@ -143,10 +204,14 @@ export class DrawingToolBase<
       return;
     }
     const newPoint: Point = { time: param.time, price };
-    this._addPoint(newPoint);
+    
     if (this._previewDrawing == null) {
-      this._addPoint(newPoint);
-      this._addPreviewDrawing(this._points);
+      this._addPointToCache(newPoint);
+      this._addPointToCache(newPoint);
+      this._addPreviewDrawing(this._getCachedPoints());
+    } else {
+      this._addPointToCache(newPoint);
+      this._previewDrawing.addPoint(newPoint);
     }
   }
 
@@ -162,20 +227,28 @@ export class DrawingToolBase<
     }
 
     const newPoint: Point = { time: param.time, price };
-    const lastPointIndex = this._points.length - 1;
+    const lastPointIndex = this._getCachedPoints().length - 1;
+    this._getCachedPoints()[lastPointIndex] = newPoint;
 
     if (this._previewDrawing) {
       this._previewDrawing?.updatePoint(newPoint, lastPointIndex);
     }
   }
 
-  protected _addPoint(p: Point) {
-    this._points.push(p);
+  protected _addPointToCache(p: Point) {
+    this._pointsCache.push(p);
+  }
+
+  protected _getCachedPoints(): Point[] {
+    return this._pointsCache;
   }
 
   protected _addNewDrawing(points: Point[]) {
+    const clonnedPoints: Point[] = [];
+    points.forEach(val => clonnedPoints.push(Object.assign({}, val)));
+    
     const drawing = new this.DrawingClass(
-      points,
+      clonnedPoints,
       this._defaultOptions,
       { ...this._options },
     );
@@ -188,8 +261,11 @@ export class DrawingToolBase<
   }
 
   protected _addPreviewDrawing(points: Point[]) {
+    const clonnedPoints: Point[] = [];
+    points.forEach(val => clonnedPoints.push(Object.assign({}, val)));
+    
     this._previewDrawing = new this.PreviewDrawingClass(
-      points,
+      clonnedPoints,
       this._defaultOptions,
       { ...this._options },
     );

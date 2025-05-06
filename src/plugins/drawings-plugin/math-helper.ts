@@ -37,12 +37,12 @@ export abstract class MathHelper {
     }
 
     public static ToRadians(angleDegrees: number): number {
-		return angleDegrees / 180.0 * Math.PI;
-	}
+        return angleDegrees / 180.0 * Math.PI;
+    }
 
-	public static ToDegrees(angleRadians: number): number {
-		return angleRadians / Math.PI * 180.0;
-	}
+    public static ToDegrees(angleRadians: number): number {
+        return angleRadians / Math.PI * 180.0;
+    }
 
     // @details Fill cubic Bezier curve points for a curve connecting point1, point2, point3
     public static GetCubicBezierCurveDrawingPoints(vertex1: Point2D, apex: Point2D, vertex2: Point2D): BezierCurvesPointsInfo {

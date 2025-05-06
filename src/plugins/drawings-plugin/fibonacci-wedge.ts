@@ -107,7 +107,7 @@ export function drawFibWedge(renderingScope: BitmapCoordinatesRenderingScope, po
 
 		// drawing label
 		let angleBisectorVec: Vector2D = p1.subtract(p0);
-		angleBisectorVec = RotateVector(angleBisectorVec, sweepAngle / 2);
+		angleBisectorVec = MathHelper.RotateVector(angleBisectorVec, sweepAngle / 2);
 		angleBisectorVec = angleBisectorVec.scale(currLevel, currLevel);
 
 		const ctx = renderingScope.context;

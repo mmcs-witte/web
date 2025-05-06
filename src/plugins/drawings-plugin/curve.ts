@@ -21,7 +21,7 @@ import { positionsBox } from '../../helpers/dimensions/positions.ts';
 import { Point as Point2D } from '@flatten-js/core';
 import { Vector as Vector2D } from '@flatten-js/core';
 import { Segment } from '@flatten-js/core';
-import { DrawingBase, DrawingToolBase, type Point, type ViewPoint } from './drawing-base.ts';
+import { DrawingBase, DrawingToolBase, RectangleAxisPaneRenderer, type Point, type ViewPoint } from './drawing-base.ts';
 import { MathHelper, type BezierCurvesPointsInfo } from './math-helper.ts';
 import { CollisionHelper } from './collision-helper.ts';
 
@@ -225,9 +225,8 @@ class CurveAxisPaneRenderer implements IPrimitivePaneRenderer {
 
 abstract class CurveAxisPaneView implements IPrimitivePaneView {
 	_source: Curve;
-	_p1: number | null = null;
-	_p2: number | null = null;
-	_p3: number | null = null;
+	_minPoint: number | null = null;
+	_maxPoint: number | null = null;
 	_vertical: boolean = false;
 
 	constructor(source: Curve, vertical: boolean) {
@@ -235,17 +234,16 @@ abstract class CurveAxisPaneView implements IPrimitivePaneView {
 		this._vertical = vertical;
 	}
 
-	abstract getPoints(): [Coordinate | null, Coordinate | null, Coordinate | null];
+	abstract getPoints(): [Coordinate | null, Coordinate | null];
 
 	update() {
-		[this._p1, this._p2, this._p3] = this.getPoints();
+		[this._minPoint, this._maxPoint] = this.getPoints();
 	}
 
 	renderer() {
-		return new CurveAxisPaneRenderer(
-			this._p1,
-			this._p2,
-			this._p3,
+		return new RectangleAxisPaneRenderer(
+			this._minPoint,
+			this._maxPoint,
 			this._source._options.fillColor,
 			this._vertical
 		);
@@ -256,22 +254,20 @@ abstract class CurveAxisPaneView implements IPrimitivePaneView {
 }
 
 class CurvePriceAxisPaneView extends CurveAxisPaneView {
-	getPoints(): [Coordinate | null, Coordinate | null, Coordinate | null] {
+	getPoints(): [Coordinate | null, Coordinate | null] {
 		const series = this._source.series;
-		const y1 = series.priceToCoordinate(this._source._p1.price);
-		const y2 = series.priceToCoordinate(this._source._p2.price);
-		const y3 = series.priceToCoordinate(this._source._p3.price);
-		return [y1, y2, y3];
+		const y1 = series.priceToCoordinate(this._source._bounds._minPrice);
+		const y2 = series.priceToCoordinate(this._source._bounds._maxPrice);
+		return [y1, y2];
 	}
 }
 
 class CurveTimeAxisPaneView extends CurveAxisPaneView {
-	getPoints(): [Coordinate | null, Coordinate | null, Coordinate | null] {
+	getPoints(): [Coordinate | null, Coordinate | null] {
 		const timeScale = this._source.chart.timeScale();
-		const x1 = timeScale.timeToCoordinate(this._source._p1.time);
-		const x2 = timeScale.timeToCoordinate(this._source._p2.time);
-		const x3 = timeScale.timeToCoordinate(this._source._p3.time);
-		return [x1, x2, x3];
+		const x1 = timeScale.timeToCoordinate(this._source._bounds._minTime);
+		const x2 = timeScale.timeToCoordinate(this._source._bounds._maxTime);
+		return [x1, x2];
 	}
 }
 
@@ -358,36 +354,24 @@ const defaultOptions: CurveDrawingToolOptions = {
 
 class Curve extends DrawingBase<CurveDrawingToolOptions> {
 	_paneViews: CurvePaneView[];
-	// TODO: rewrite commented classes 
-	// _timeAxisViews: CurveTimeAxisView[];
-	// _priceAxisViews: CurvePriceAxisView[];
-	// _priceAxisPaneViews: CurvePriceAxisPaneView[];
-	// _timeAxisPaneViews: CurveTimeAxisPaneView[];
+	_timeAxisViews: CurveTimeAxisView[] = [];
+	_priceAxisViews: CurvePriceAxisView[] = [];
+	_priceAxisPaneViews: CurvePriceAxisPaneView[];
+	_timeAxisPaneViews: CurveTimeAxisPaneView[];
 
 	constructor(
 		points: Point[],
 		options: Partial<CurveDrawingToolOptions> = {}
 	) {
 		super(points, defaultOptions, options);
-
+		
 		this._paneViews = [new CurvePaneView(this)];
-		// this._timeAxisViews = [
-		// 	new CurveTimeAxisView(this, this._p1),
-		// 	new CurveTimeAxisView(this, this._p2),
-		// 	new CurveTimeAxisView(this, this._p3),
-		// ];
-		// this._priceAxisViews = [
-		// 	new CurvePriceAxisView(this, this._p1),
-		// 	new CurvePriceAxisView(this, this._p2),
-		// 	new CurvePriceAxisView(this, this._p3),
-		// ];
-		// this._priceAxisPaneViews = [new CurvePriceAxisPaneView(this, true)];
-		// this._timeAxisPaneViews = [new CurveTimeAxisPaneView(this, false)];
-	}
-
-	public override addPoint(p: Point) {
-		this._points.push(p);
-		this.requestUpdate();
+		points.forEach(point => {
+			this._timeAxisViews.push(new CurveTimeAxisView(this, point));
+			this._priceAxisViews.push(new CurvePriceAxisView(this, point));
+		});
+		this._priceAxisPaneViews = [new CurvePriceAxisPaneView(this, true)];
+		this._timeAxisPaneViews = [new CurveTimeAxisPaneView(this, false)];
 	}
 
 	public override updatePoint(p: Point, index: number) {
@@ -396,39 +380,39 @@ class Curve extends DrawingBase<CurveDrawingToolOptions> {
 
 		this._points[index] = p;
 		this._paneViews[0].update();
-		// this._timeAxisViews[0].movePoint(p);
-		// this._priceAxisViews[0].movePoint(p);
+		// this._timeAxisViews[index].movePoint(p);
+		// this._priceAxisViews[index].movePoint(p);
 
 		this.requestUpdate();
 	}
 
 	updateAllViews() {
 		this._paneViews.forEach(pw => pw.update());
-		// this._timeAxisViews.forEach(pw => pw.update());
-		// this._priceAxisViews.forEach(pw => pw.update());
-		// this._priceAxisPaneViews.forEach(pw => pw.update());
-		// this._timeAxisPaneViews.forEach(pw => pw.update());
+		this._timeAxisViews.forEach(pw => pw.update());
+		this._priceAxisViews.forEach(pw => pw.update());
+		this._priceAxisPaneViews.forEach(pw => pw.update());
+		this._timeAxisPaneViews.forEach(pw => pw.update());
 	}
 
-	// priceAxisViews() {
-	//   return this._priceAxisViews;
-	// }
+	priceAxisViews() {
+	  return this._priceAxisViews;
+	}
 
-	// timeAxisViews() {
-	//   return this._timeAxisViews;
-	// }
+	timeAxisViews() {
+	  return this._timeAxisViews;
+	}
 
 	paneViews() {
 		return this._paneViews;
 	}
 
-	// priceAxisPaneViews() {
-	// 	return this._priceAxisPaneViews;
-	// }
+	priceAxisPaneViews() {
+		return this._priceAxisPaneViews;
+	}
 
-	// timeAxisPaneViews() {
-	// 	return this._timeAxisPaneViews;
-	// }
+	timeAxisPaneViews() {
+		return this._timeAxisPaneViews;
+	}
 
 	applyOptions(options: Partial<CurveDrawingToolOptions>) {
 		this._options = { ...this._options, ...options };
@@ -473,15 +457,18 @@ export class CurveDrawingTool extends DrawingToolBase<
 		}
 
 		const newPoint: Point = { time: param.time, price };
-		if (this._points.length == 3) {
+		if (this._pointsCache.length > 3) {
 			this._removePreviewDrawing();
-			this._addNewDrawing(this._points);
+			this._addNewDrawing(this._pointsCache.slice(0, 3));
 			this.stopDrawing();
 		} else {
-			this._addPoint(newPoint);
 			if (this._previewDrawing == null) {
-				this._addPoint(newPoint);
-				this._addPreviewDrawing(this._points);
+				this._addPointToCache(newPoint);
+				this._addPointToCache(newPoint);
+				this._addPreviewDrawing(this._pointsCache);
+			} else {
+				this._addPointToCache(newPoint);
+				this._previewDrawing.addPoint(newPoint);
 			}
 		}
 	}

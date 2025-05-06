@@ -140,7 +140,7 @@ export abstract class CollisionHelper {
     ///	@param arcStartAngle A start arc angle in degrees, counterclockwise
     ///	@param arcSweepAngle A sweep arc angle in degrees, counterclockwise
     ///	@returns The distance to the arc
-    public static GetDistanceToArc(currPoint: Point2D, arcCenter: Point2D, arcRadius: number, arcStartAngle: number, arcSweepAngle: number, tolerance: number): boolean {
+    public static HitTestArc(currPoint: Point2D, arcCenter: Point2D, arcRadius: number, arcStartAngle: number, arcSweepAngle: number, tolerance: number): boolean {
         let arcStartAngleDir: Vector2D = new Vector2D(1.0, 0.0);
         arcStartAngleDir = MathHelper.RotateVector(arcStartAngleDir, MathHelper.ToRadians(arcStartAngle));
 
@@ -156,11 +156,11 @@ export abstract class CollisionHelper {
         else if (arcSweepAngle >= 0 && angleDeviationFromStartAngle >= 0.0) {
             bHits = angleDeviationFromStartAngle < arcSweepAngle;
         }
-        return bHits ? GetDistanceToFullCirceArc(currPoint, arcCenter, arcRadius) : false;
+        return bHits ? this.HitTestFullCircleArc(currPoint, arcCenter, arcRadius, tolerance) : false;
     }
 
-    public static GetDistanceToFullCircleArc(point: Point2D, arcCenter: Point2D, radius: number) {
-        return Math.abs(radius - point.distanceTo(arcCenter)[0]);
+    public static HitTestFullCircleArc(point: Point2D, arcCenter: Point2D, radius: number, tolerance: number): boolean {
+        return Math.abs(radius - point.distanceTo(arcCenter)[0]) < tolerance ? true : false;
     }
 }
 

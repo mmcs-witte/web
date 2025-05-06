@@ -20,7 +20,7 @@ import { ensureDefined } from '../../helpers/assertions.ts';
 import { PluginBase } from '../plugin-base.ts';
 import { positionsBox } from '../../helpers/dimensions/positions.ts';
 import { Point as Point2D, Vector as Vector2D } from '@flatten-js/core';
-import type { Point, ViewPoint } from './drawing-base.ts';
+import { RectangleAxisPaneRenderer, type Point, type ViewPoint } from './drawing-base.ts';
 import { MathHelper } from './math-helper.ts';
 class FibSpiralPaneRenderer implements IPrimitivePaneRenderer {
 	_fibSpiralRendeInfo: FibSpiralRenderInfo;
@@ -223,44 +223,6 @@ class FibSpiralPaneView implements IPrimitivePaneView {
 			this.updateRenderInfo(this._p1, this._p2),
 			this._source._options.lineColor
 		);
-	}
-}
-
-class RectangleAxisPaneRenderer implements IPrimitivePaneRenderer {
-	_p1: number | null;
-	_p2: number | null;
-	_fillColor: string;
-	_vertical: boolean = false;
-
-	constructor(
-		p1: number | null,
-		p2: number | null,
-		fillColor: string,
-		vertical: boolean
-	) {
-		this._p1 = p1;
-		this._p2 = p2;
-		this._fillColor = fillColor;
-		this._vertical = vertical;
-	}
-
-	draw(target: CanvasRenderingTarget2D) {
-		target.useBitmapCoordinateSpace(scope => {
-			if (this._p1 === null || this._p2 === null) return;
-			const ctx = scope.context;
-			ctx.globalAlpha = 0.5;
-			const positions = positionsBox(
-				this._p1,
-				this._p2,
-				this._vertical ? scope.verticalPixelRatio : scope.horizontalPixelRatio
-			);
-			ctx.fillStyle = this._fillColor;
-			if (this._vertical) {
-				ctx.fillRect(0, positions.position, 15, positions.length);
-			} else {
-				ctx.fillRect(positions.position, 0, positions.length, 15);
-			}
-		});
 	}
 }
 
