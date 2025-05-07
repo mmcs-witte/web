@@ -113,12 +113,13 @@ const createDrawingTools = (chart, series) => {
     "triangle": new TriangleDrawingTool(chart, series),
     "fibonacci_channel": new FibChannelDrawingTool(chart, series),
     "fibonacci_spiral": new FibSpiralDrawingTool(chart, series),
-    "curve": new CurveDrawingTool(chart, series),
+    //"curve": new CurveDrawingTool(chart, series),
+    "curve": new FibWedgeDrawingTool(chart, series),
     "trend_line": new TrendLineDrawingTool(chart, series),
-    //"time_line": new TimeLineDrawingTool(chart, series),
-    "time_line": new PolylineDrawingTool(chart, series),
-    // "fibonacci_wedge": new FibWedgeDrawingTool(chart, series), 
-    // "polyline": new PolylineDrawingTool(chart, series),
+    "time_line": new TimeLineDrawingTool(chart, series),
+    "polyline": new PolylineDrawingTool(chart, series),
+    "fibonacci_wedge": new FibWedgeDrawingTool(chart, series), 
+    "polyline": new PolylineDrawingTool(chart, series),
   }
   
   for (let tool in drawingTools) {

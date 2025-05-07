@@ -1,5 +1,4 @@
 import type { CanvasRenderingTarget2D, BitmapCoordinatesRenderingScope } from 'fancy-canvas';
-
 import {
 	isBusinessDay
 } from 'lightweight-charts';
@@ -14,15 +13,14 @@ import type {
 	PrimitivePaneViewZOrder,
 	SeriesType,
 	Time,
+	PrimitiveHoveredItem,
 } from 'lightweight-charts';
-import { ensureDefined } from '../../helpers/assertions.ts';
-import { PluginBase } from '../plugin-base.ts';
-import { positionsBox } from '../../helpers/dimensions/positions.ts';
-
-import { Point as Point2D } from '@flatten-js/core';
+import { Point as Point2D, Segment } from '@flatten-js/core';
 import { Vector as Vector2D } from '@flatten-js/core';
-import type { Point, ViewPoint } from './drawing-base.ts';
+import { DrawingBase, DrawingToolBase, RectangleAxisPaneRenderer, type Point, type ViewPoint } from './drawing-base.ts';
 import { MathHelper } from './math-helper.ts';
+import { CollisionHelper } from './collision-helper.ts';
+
 
 export interface AnnulusSectorRenderInfo {
 	annulusCenter: Point2D;
@@ -32,6 +30,7 @@ export interface AnnulusSectorRenderInfo {
 	sweepAngle: number;
 }
 
+// TODO: move this to renderer
 export function fillAnnulusSector(renderingScope: BitmapCoordinatesRenderingScope, annulusRenderInfo: AnnulusSectorRenderInfo, fillColor: string, lineColor: string) {
 	const ctx = renderingScope.context;
 
@@ -65,14 +64,11 @@ export function fillAnnulusSector(renderingScope: BitmapCoordinatesRenderingScop
 	ctx.stroke();
 }
 
-export function drawFibWedge(renderingScope: BitmapCoordinatesRenderingScope, points: Point2D[]) {
+// TODO: move this to renderer 
+export function drawFibWedge(renderingScope: BitmapCoordinatesRenderingScope, points: Point2D[], fibonacciLevels: number[], fibonacciFillColors: string[], fibonacciLineColors: string[]) {
 	if (points.length != 3) {
 		return;
 	}
-
-	const fibonacciLevels = [0, 0.236, 0.382, 0.5, 0.618, 0.786, 1, 1.256];
-	const fibonacciFillColors = ['rgba(234, 53, 40, 0.3)', 'rgba(244, 244, 19, 0.3)', 'rgba(35, 220, 87, 0.3)', 'rgba(7, 227, 179, 0.3)', 'rgba(35, 186, 220, 0.3)', 'rgba(149, 35, 220, 0.3)'];
-	const fibonacciLineColors = ['rgb(234, 53, 40)', 'rgb(244, 244, 19)', 'rgb(35, 220, 87)', 'rgb(7, 227, 179)', 'rgb(35, 186, 220)', 'rgb(149, 35, 220)'];
 
 	const p0 = new Vector2D(points[0].x, points[0].y);
 	const p1 = new Vector2D(points[1].x, points[1].y);
@@ -122,11 +118,17 @@ export function drawFibWedge(renderingScope: BitmapCoordinatesRenderingScope, po
 
 class FibWedgePaneRenderer implements IPrimitivePaneRenderer {
 	_points: ViewPoint[];
-	_fillColor: string;
+	_lineStyle: string;
+	_fibonacciLevels: number[];
+	_fibonacciFillColors: string[];
+	_fibonacciLineColors: string[];
 
-	constructor(points: ViewPoint[], fillColor: string) {
+	constructor(points: ViewPoint[], fibonacciLevels: number[], fibonacciFillColors: string[], fibonacciLineColors: string[], lineStyle: string) {
 		this._points = points;
-		this._fillColor = fillColor;
+		this._fibonacciLevels = fibonacciLevels;
+		this._fibonacciFillColors = fibonacciFillColors;
+		this._fibonacciLineColors = fibonacciLineColors;
+		this._lineStyle = lineStyle;
 	}
 
 	draw(target: CanvasRenderingTarget2D) {
@@ -154,7 +156,7 @@ class FibWedgePaneRenderer implements IPrimitivePaneRenderer {
 				ctx.beginPath();
 				ctx.moveTo(drawingPoint1.x, drawingPoint1.y);
 				ctx.lineTo(drawingPoint2.x, drawingPoint2.y);
-				ctx.strokeStyle = this._fillColor;
+				ctx.strokeStyle = this._lineStyle;
 				ctx.lineWidth = scope.verticalPixelRatio;
 				ctx.stroke();
 			}
@@ -164,100 +166,94 @@ class FibWedgePaneRenderer implements IPrimitivePaneRenderer {
 					new Point2D(drawingPoint2.x, drawingPoint2.y),
 					new Point2D(drawingPoint3.x, drawingPoint3.y),
 				]
-				drawFibWedge(scope, points);
+				drawFibWedge(scope, points, this._fibonacciLevels, this._fibonacciFillColors, this._fibonacciLineColors);
 			}
 		});
+	}
+
+	hitTest(x: number, y: number): PrimitiveHoveredItem | null {
+		if (this._points.length < 3) {
+			return;
+		}
+
+		const tolerance: number = 3e-0;
+
+		const hitTestPoint: Point2D = new Point2D(x, y);
+		const center: Vector2D = new Vector2D(this._points[0].x, this._points[0].y);
+		const r1: Vector2D = new Vector2D(this._points[1].x, this._points[1].y);
+		const r2: Vector2D = new Vector2D(this._points[2].x, this._points[2].y);
+
+		const radiusLine1: Segment = new Segment(new Point2D(center.x, center.y), new Point2D(r1.x, r1.y));
+		const radiusLine2: Segment = new Segment(new Point2D(center.x, center.y), new Point2D(r2.x, r2.y));
+		const dist1 = radiusLine1.distanceTo(hitTestPoint)[0];
+		const dist2 = radiusLine2.distanceTo(hitTestPoint)[0];
+
+		let hit: boolean = false;
+
+		if (dist1 < tolerance || dist2 < tolerance)
+			hit = true;
+
+		const radius: number = new Point2D(r1.x, r1.y).distanceTo(new Point2D(r2.x, r2.y))[0];
+
+		for (let i = 1; i < this._fibonacciLevels.length && !hit; i++) {
+			const level: number = this._fibonacciLevels[i];
+			const startAngleDegrees: number = MathHelper.ToDegrees(MathHelper.AngleBetweenVectors(new Vector2D(1.0, 0.0), r1.subtract(center)));
+			const sweepClockwiseAngleDegrees: number = MathHelper.ToDegrees(MathHelper.AngleBetweenVectors(r1.subtract(center), r2.subtract(center)));
+			hit = CollisionHelper.HitTestArc(hitTestPoint, new Point2D(center.x, center.y), radius * level, startAngleDegrees, sweepClockwiseAngleDegrees, tolerance);
+		}
+
+
+		if (hit) {
+			return {
+				cursorStyle: "grab",
+				externalId: 'curve-drawing',
+				zOrder: 'top',
+			};
+		} else {
+			return null;
+		}
 	}
 }
 
 class FibWedgePaneView implements IPrimitivePaneView {
 	_source: FibWedge;
-	_p1: ViewPoint = { x: null, y: null };
-	_p2: ViewPoint = { x: null, y: null };
-	_p3: ViewPoint = { x: null, y: null };
+	_points: Point[];
+	_drawingPoints: ViewPoint[];
 
 	constructor(source: FibWedge) {
 		this._source = source;
+		this._points = source._points;
+		this._drawingPoints = new Array<ViewPoint>(source._points.length);
 	}
 
 	update() {
-		const series = this._source.series;
-		const y1 = this._source._p1.price ? series.priceToCoordinate(this._source._p1.price) : this._source._p1.price;
-		const y2 = this._source._p2.price ? series.priceToCoordinate(this._source._p2.price) : this._source._p2.price
-		const y3 = this._source._p3.price ? series.priceToCoordinate(this._source._p3.price) : this._source._p3.price;
-		const timeScale = this._source.chart.timeScale();
-		const x1 = this._source._p1.time ? timeScale.timeToCoordinate(this._source._p1.time) : this._source._p1.time;
-		const x2 = this._source._p2.time ? timeScale.timeToCoordinate(this._source._p2.time) : this._source._p2.time;
-		const x3 = this._source._p3.time ? timeScale.timeToCoordinate(this._source._p3.time) : this._source._p3.time;
+		this._points = this._source._points;
+		this._drawingPoints = new Array<ViewPoint>(this._source._points.length);
 
-		this._p1 = { x: x1, y: y1 };
-		this._p2 = { x: x2, y: y2 };
-		this._p3 = { x: x3, y: y3 };
+		const series = this._source.series;
+		const timeScale = this._source.chart.timeScale();
+		for (let i = 0; i < this._points.length; ++i) {
+			const x = timeScale.timeToCoordinate(this._points[i].time);
+			const y = series.priceToCoordinate(this._points[i].price);
+			this._drawingPoints[i] = { x: x, y: y };
+		}
 	}
 
 	renderer() {
-		const n: number = this._source._numPointsToUse;
-		const points: ViewPoint[] = [];
-		for (let i: number = 0; i < n; i++) {
-			points.push(i == 0 ? this._p1 : i == 1 ? this._p2 : this._p3);
-		}
 		return new FibWedgePaneRenderer(
-			points,
-			this._source._options.fillColor
+			this._drawingPoints,
+			this._source._options.fibonacciLevels,
+			this._source._options.fibonacciFillColors,
+			this._source._options.fibonacciLineColors,
+			this._source._options.lineStyle,
 		);
-	}
-}
-
-class FibWedgeAxisPaneRenderer implements IPrimitivePaneRenderer {
-	_p1: number | null;
-	_p2: number | null;
-	_p3: number | null;
-	_fillColor: string;
-	_vertical: boolean = false;
-
-	constructor(
-		p1: number | null,
-		p2: number | null,
-		p3: number | null,
-		fillColor: string,
-		vertical: boolean
-	) {
-		this._p1 = p1;
-		this._p2 = p2;
-		this._p3 = p3;
-		this._fillColor = fillColor;
-		this._vertical = vertical;
-	}
-
-	draw(target: CanvasRenderingTarget2D) {
-		target.useBitmapCoordinateSpace(scope => {
-			if (this._p1 === null || this._p2 === null || this._p3 === null) return;
-			const ctx = scope.context;
-			ctx.globalAlpha = 0.5;
-
-			const posStart: number = Math.min(this._p1, Math.min(this._p2, this._p3));
-			const posEnd: number = Math.max(this._p1, Math.max(this._p2, this._p3));
-			const positions = positionsBox(
-				posStart,
-				posEnd,
-				this._vertical ? scope.verticalPixelRatio : scope.horizontalPixelRatio
-			);
-
-			ctx.fillStyle = this._fillColor;
-			if (this._vertical) {
-				ctx.fillRect(0, positions.position, 15, positions.length);
-			} else {
-				ctx.fillRect(positions.position, 0, positions.length, 15);
-			}
-		});
 	}
 }
 
 abstract class FibWedgeAxisPaneView implements IPrimitivePaneView {
 	_source: FibWedge;
-	_p1: number | null = null;
-	_p2: number | null = null;
-	_p3: number | null = null;
+	_minPoint: number | null = null;
+	_maxPoint: number | null = null;
 	_vertical: boolean = false;
 
 	constructor(source: FibWedge, vertical: boolean) {
@@ -265,17 +261,16 @@ abstract class FibWedgeAxisPaneView implements IPrimitivePaneView {
 		this._vertical = vertical;
 	}
 
-	abstract getPoints(): [Coordinate | null, Coordinate | null, Coordinate | null];
+	abstract getPoints(): [Coordinate | null, Coordinate | null];
 
 	update() {
-		[this._p1, this._p2, this._p3] = this.getPoints();
+		[this._minPoint, this._maxPoint] = this.getPoints();
 	}
 
 	renderer() {
-		return new FibWedgeAxisPaneRenderer(
-			this._p1,
-			this._p2,
-			this._p3,
+		return new RectangleAxisPaneRenderer(
+			this._minPoint,
+			this._maxPoint,
 			this._source._options.fillColor,
 			this._vertical
 		);
@@ -286,22 +281,20 @@ abstract class FibWedgeAxisPaneView implements IPrimitivePaneView {
 }
 
 class FibWedgePriceAxisPaneView extends FibWedgeAxisPaneView {
-	getPoints(): [Coordinate | null, Coordinate | null, Coordinate | null] {
+	getPoints(): [Coordinate | null, Coordinate | null] {
 		const series = this._source.series;
-		const y1 = series.priceToCoordinate(this._source._p1.price);
-		const y2 = series.priceToCoordinate(this._source._p2.price);
-		const y3 = series.priceToCoordinate(this._source._p3.price);
-		return [y1, y2, y3];
+		const y1 = series.priceToCoordinate(this._source._bounds._minPrice);
+		const y2 = series.priceToCoordinate(this._source._bounds._maxPrice);
+		return [y1, y2];
 	}
 }
 
 class FibWedgeTimeAxisPaneView extends FibWedgeAxisPaneView {
-	getPoints(): [Coordinate | null, Coordinate | null, Coordinate | null] {
+	getPoints(): [Coordinate | null, Coordinate | null] {
 		const timeScale = this._source.chart.timeScale();
-		const x1 = timeScale.timeToCoordinate(this._source._p1.time);
-		const x2 = timeScale.timeToCoordinate(this._source._p2.time);
-		const x3 = timeScale.timeToCoordinate(this._source._p3.time);
-		return [x1, x2, x3];
+		const x1 = timeScale.timeToCoordinate(this._source._bounds._minTime);
+		const x2 = timeScale.timeToCoordinate(this._source._bounds._maxTime);
+		return [x1, x2];
 	}
 }
 
@@ -361,6 +354,10 @@ class FibWedgePriceAxisView extends FibWedgeAxisView {
 }
 
 export interface FibWedgeOptions {
+	lineStyle: string;
+	fibonacciLevels: number[];
+	fibonacciFillColors: string[];
+	fibonacciLineColors: string[];
 	fillColor: string;
 	previewFillColor: string;
 	labelColor: string;
@@ -371,9 +368,13 @@ export interface FibWedgeOptions {
 }
 
 const defaultOptions: FibWedgeOptions = {
-	fillColor: 'rgb(0, 0, 0)',
-	previewFillColor: 'rgb(0, 0, 0)',
-	labelColor: 'rgb(0, 0, 0)',
+	lineStyle: 'rgb(149, 35, 220)',
+	fibonacciLevels: [0, 0.236, 0.382, 0.5, 0.618, 0.786, 1, 1.256],
+	fibonacciFillColors: ['rgba(234, 53, 40, 0.3)', 'rgba(244, 244, 19, 0.3)', 'rgba(35, 220, 87, 0.3)', 'rgba(7, 227, 179, 0.3)', 'rgba(35, 186, 220, 0.3)', 'rgba(149, 35, 220, 0.3)'],
+	fibonacciLineColors: ['rgb(234, 53, 40)', 'rgb(244, 244, 19)', 'rgb(35, 220, 87)', 'rgb(7, 227, 179)', 'rgb(35, 186, 220)', 'rgb(149, 35, 220)'],
+	fillColor: 'rgba(234, 19, 19, 0.9)',
+	previewFillColor: 'rgba(234, 19, 19, 0.48)',
+	labelColor: 'rgba(234, 19, 19, 0.77)',
 	labelTextColor: 'white',
 	showLabels: true,
 	priceLabelFormatter: (price: number) => price.toFixed(3), // => price.toFixed(2),
@@ -386,51 +387,46 @@ const defaultOptions: FibWedgeOptions = {
 	},
 };
 
-class FibWedge extends PluginBase {
-	_options: FibWedgeOptions;
-	_p1: Point;
-	_p2: Point;
-	_p3: Point;
+class FibWedge extends DrawingBase<FibWedgeOptions> {
 	_paneViews: FibWedgePaneView[];
-	_timeAxisViews: FibWedgeTimeAxisView[];
-	_priceAxisViews: FibWedgePriceAxisView[];
+	_timeAxisViews: FibWedgeTimeAxisView[] = [];
+	_priceAxisViews: FibWedgePriceAxisView[] = [];
 	_priceAxisPaneViews: FibWedgePriceAxisPaneView[];
 	_timeAxisPaneViews: FibWedgeTimeAxisPaneView[];
-	_numPointsToUse: number;
 
 	constructor(
 		points: Point[],
 		options: Partial<FibWedgeOptions> = {}
 	) {
-		super();
-		if (points.length == 0) {
-			this._p1 = { time: 0, price: 0 };
-			this._p2 = this._p1;
-			this._p3 = this._p1;
-			this._numPointsToUse = 2;
-		} else {
-			this._p1 = points[0];
-			this._p2 = points.length >= 2 ? points[1] : points[0];
-			this._p3 = points.length >= 3 ? points[2] : points[0];
-			this._numPointsToUse = Math.min(points.length + 1, 3);
-		}
-		this._options = {
-			...defaultOptions,
-			...options,
-		};
+		super(points, defaultOptions, options);
+
 		this._paneViews = [new FibWedgePaneView(this)];
-		this._timeAxisViews = [
-			new FibWedgeTimeAxisView(this, this._p1),
-			new FibWedgeTimeAxisView(this, this._p2),
-			new FibWedgeTimeAxisView(this, this._p3),
-		];
-		this._priceAxisViews = [
-			new FibWedgePriceAxisView(this, this._p1),
-			new FibWedgePriceAxisView(this, this._p2),
-			new FibWedgePriceAxisView(this, this._p3),
-		];
+		points.forEach(point => {
+			this._timeAxisViews.push(new FibWedgeTimeAxisView(this, point));
+			this._priceAxisViews.push(new FibWedgePriceAxisView(this, point));
+		});
 		this._priceAxisPaneViews = [new FibWedgePriceAxisPaneView(this, true)];
 		this._timeAxisPaneViews = [new FibWedgeTimeAxisPaneView(this, false)];
+	}
+
+	public override addPoint(p: Point) {
+		this._updateDrawingBounds(p);
+		this._points.push(p);
+		this._timeAxisViews.push(new FibWedgeTimeAxisView(this, p));
+		this._priceAxisViews.push(new FibWedgePriceAxisView(this, p));
+		this.requestUpdate();
+	}
+
+	public override updatePoint(p: Point, index: number) {
+		if (index >= this._points.length || index < 0)
+			return;
+
+		this._points[index] = p;
+		this._paneViews[0].update();
+		this._priceAxisViews[index].movePoint(p);
+		this._timeAxisViews[index].movePoint(p);
+
+		this.requestUpdate();
 	}
 
 	updateAllViews() {
@@ -465,9 +461,16 @@ class FibWedge extends PluginBase {
 		this._options = { ...this._options, ...options };
 		this.requestUpdate();
 	}
+
+	hitTest(x: number, y: number): PrimitiveHoveredItem | null {
+		if (this._paneViews.length > 0) {
+			return this._paneViews[0].renderer()?.hitTest(x, y) ?? null;
+		}
+		return null;
+	}
 }
 
-class PreviewFibWedge extends FibWedge {
+class FibWedgePreview extends FibWedge {
 	constructor(
 		points: Point[],
 		options: Partial<FibWedgeOptions> = {}
@@ -475,148 +478,41 @@ class PreviewFibWedge extends FibWedge {
 		super(points, options);
 		this._options.fillColor = this._options.previewFillColor;
 	}
-
-	public updateDrawingPoint(p: Point, pointIndexToUpdate: number) {
-		pointIndexToUpdate = Math.min(Math.max(0, pointIndexToUpdate), 3);
-
-		switch (pointIndexToUpdate) {
-			case 1:
-				this._p2 = p;
-				this._numPointsToUse = 2;
-				break;
-			case 2:
-				this._p3 = p;
-				this._numPointsToUse = 3;
-				break;
-		}
-
-		this._paneViews[0].update();
-		this._timeAxisViews[pointIndexToUpdate].movePoint(p);
-		this._priceAxisViews[pointIndexToUpdate].movePoint(p);
-
-		this.requestUpdate();
-	}
 }
 
-export class FibWedgeDrawingTool {
-	private _chart: IChartApi | undefined;
-	private _series: ISeriesApi<SeriesType> | undefined;
-	private _defaultOptions: Partial<FibWedgeOptions>;
-	private _drawings: FibWedge[];
-	private _previewDrawing: PreviewFibWedge | undefined = undefined;
-	private _points: Point[] = [];
-	private _drawing: boolean = false;
-
+export class FibWedgeDrawingTool extends DrawingToolBase<
+	DrawingBase<FibWedgeOptions>,
+	DrawingBase<FibWedgeOptions>,
+	FibWedgeOptions> {
 	constructor(
 		chart: IChartApi,
 		series: ISeriesApi<SeriesType>,
 		options: Partial<FibWedgeOptions>
 	) {
-		this._chart = chart;
-		this._series = series;
-		this._defaultOptions = options;
-		this._drawings = [];
-		this._chart.subscribeClick(this._clickHandler);
-		this._chart.subscribeCrosshairMove(this._moveHandler);
+		super(FibWedge, FibWedgePreview, chart, series, defaultOptions, options);
 	}
 
-	private _clickHandler = (param: MouseEventParams) => this._onClick(param);
-	private _moveHandler = (param: MouseEventParams) => this._onMouseMove(param);
-
-	remove() {
-		this.stopDrawing();
-		if (this._chart) {
-			this._chart.unsubscribeClick(this._clickHandler);
-			this._chart.unsubscribeCrosshairMove(this._moveHandler);
-		}
-		this._drawings.forEach(drawing => {
-			this._removeDrawing(drawing);
-		});
-		this._drawings = [];
-		this._removePreviewDrawing();
-		this._chart = undefined;
-		this._series = undefined;
-	}
-
-	startDrawing(): void {
-		this._drawing = true;
-		this._points = [];
-	}
-
-	stopDrawing(): void {
-		this._drawing = false;
-		this._points = [];
-	}
-
-	isDrawing(): boolean {
-		return this._drawing;
-	}
-
-	private _onClick(param: MouseEventParams) {
+	protected override _onClick(param: MouseEventParams) {
 		if (!this._drawing || !param.point || !param.time || !this._series) return;
 		const price = this._series.coordinateToPrice(param.point.y);
 		if (price === null) {
 			return;
 		}
 
-		this._addPoint({
-			time: param.time,
-			price
-		});
-	}
-
-	private _onMouseMove(param: MouseEventParams) {
-		if (!this._drawing || !param.point || !param.time || !this._series) return;
-		const price = this._series.coordinateToPrice(param.point.y);
-		if (price === null) {
-			return;
-		}
-
-		const numPoints: number = this._points.length;
-
-		if (this._previewDrawing) {
-			this._previewDrawing.updateDrawingPoint(
-				{
-					time: param.time,
-					price,
-				},
-				numPoints);
-		}
-	}
-
-	private _addPoint(p: Point) {
-		this._points.push(p);
-		if (this._points.length > 2) {
-			this._addNewDrawing(this._points[0], this._points[1], this._points[2]);
-			this.stopDrawing();
-			this._removePreviewDrawing();
-		}
-		if (this._points.length === 1) {
-			this._addPreviewDrawing(this._points[0]);
-		}
-	}
-
-	private _addNewDrawing(p1: Point, p2: Point, p3: Point) {
-		const drawing = new FibWedge([p1, p2, p3], { ...this._defaultOptions });
-		this._drawings.push(drawing);
-		ensureDefined(this._series).attachPrimitive(drawing);
-	}
-
-	private _removeDrawing(drawing: FibWedge) {
-		ensureDefined(this._series).detachPrimitive(drawing);
-	}
-
-	private _addPreviewDrawing(p: Point) {
-		this._previewDrawing = new PreviewFibWedge([p], {
-			...this._defaultOptions,
-		});
-		ensureDefined(this._series).attachPrimitive(this._previewDrawing);
-	}
-
-	private _removePreviewDrawing() {
-		if (this._previewDrawing) {
-			ensureDefined(this._series).detachPrimitive(this._previewDrawing);
-			this._previewDrawing = undefined;
+		const newPoint: Point = { time: param.time, price };
+		if (this._previewDrawing == null) {
+			this._addPointToCache(newPoint);
+			this._addPointToCache(newPoint);
+			this._addPreviewDrawing(this._pointsCache);
+		} else {
+			this._addPointToCache(newPoint);
+			this._previewDrawing.addPoint(newPoint);
+			if (this._pointsCache.length > 3) {
+				this._removePreviewDrawing();
+				this._addNewDrawing(this._pointsCache.slice(0, 3));
+				this.stopDrawing();
+			}
 		}
 	}
 }
+
