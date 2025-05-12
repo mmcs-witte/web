@@ -203,11 +203,10 @@ class FibWedgePaneRenderer implements IPrimitivePaneRenderer {
 			hit = CollisionHelper.HitTestArc(hitTestPoint, new Point2D(center.x, center.y), radius * level, startAngleDegrees, sweepClockwiseAngleDegrees, tolerance);
 		}
 
-
 		if (hit) {
 			return {
 				cursorStyle: "grab",
-				externalId: 'curve-drawing',
+				externalId: 'fib-wedge-drawing',
 				zOrder: 'top',
 			};
 		} else {
