@@ -12,7 +12,7 @@ import type {
   IPrimitivePaneRenderer,
 } from 'lightweight-charts';
 
-import { PluginBase } from '../plugin-base.ts';
+import { ChartInstrumentBase } from '../chart-instrument-base.ts';
 import { ensureDefined } from '../../helpers/assertions.ts';
 import { positionsBox } from '../../helpers/dimensions/positions.ts';
 
@@ -72,7 +72,7 @@ export class RectangleAxisPaneRenderer implements IPrimitivePaneRenderer {
 }
 
 
-export class DrawingBase<DrawingOptions> extends PluginBase {
+export class DrawingBase<DrawingOptions> extends ChartInstrumentBase {
   _options: DrawingOptions;
   _points: Point[];
 	_bounds: DrawingBounds;

@@ -17,7 +17,7 @@ import {
 } from 'lightweight-charts';
 
 import { ensureDefined } from '../../helpers/assertions.ts';
-import { PluginBase } from '../plugin-base.ts';
+import { ChartInstrumentBase } from '../chart-instrument-base.ts';
 import { positionsBox } from '../../helpers/dimensions/positions.ts';
 import { RectangleAxisPaneRenderer, type Point, type ViewPoint } from './drawing-base.ts';
 
@@ -264,7 +264,7 @@ const defaultOptions: FibChannelDrawingToolOptions = {
 	},
 };
 
-class FibChannel extends PluginBase {
+class FibChannel extends ChartInstrumentBase {
 	_options: FibChannelDrawingToolOptions;
 	_p1: Point;
 	_p2: Point;

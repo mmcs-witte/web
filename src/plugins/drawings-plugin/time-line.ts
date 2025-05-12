@@ -12,7 +12,7 @@ import type {
 } from 'lightweight-charts';
 
 import { ensureDefined } from '../../helpers/assertions.ts';
-import { PluginBase } from '../plugin-base.ts';
+import { ChartInstrumentBase } from '../chart-instrument-base.ts';
 import { positionsLine } from '../../helpers/dimensions/positions.ts';
 import type { Point } from './drawing-base.ts';
 
@@ -112,7 +112,7 @@ const defaultOptions: TimeLineOptions = {
   labelTextColor: 'white',
   showLabel: false,
 };
-class TimeLine extends PluginBase {
+class TimeLine extends ChartInstrumentBase {
   _p1: Point;
   _paneViews: TimeLinePaneView[];
   _timeAxisViews: TimeLineTimeAxisView[];

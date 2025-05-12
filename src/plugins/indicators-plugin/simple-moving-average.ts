@@ -14,7 +14,7 @@ import type {
 	SeriesType,
 	Time,
 } from 'lightweight-charts';
-import { PluginBase } from '../plugin-base.ts';
+import { ChartInstrumentBase } from '../chart-instrument-base.ts';
 import { cloneReadonly } from '../../helpers/simple-clone.ts';
 import { ClosestTimeIndexFinder } from '../../helpers/closest-index.ts';
 
@@ -107,7 +107,7 @@ const defaults: Required<SMAIndicatorOptions> = {
 	lineWidth: 5,
 };
 
-export class SMAIndicator extends PluginBase implements ISeriesPrimitive<Time> {
+export class SMAIndicator extends ChartInstrumentBase implements ISeriesPrimitive<Time> {
 	_paneViews: SMAIndicatorPaneView[];
 	_seriesData: SeriesDataItemTypeMap[SeriesType][] = [];
 	_smaData: SMAData[] = [];

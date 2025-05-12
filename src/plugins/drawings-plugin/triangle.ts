@@ -16,7 +16,7 @@ import type {
 	Time,
 } from 'lightweight-charts';
 import { ensureDefined } from '../../helpers/assertions.ts';
-import { PluginBase } from '../plugin-base.ts';
+import { ChartInstrumentBase } from '../chart-instrument-base.ts';
 import { positionsBox } from '../../helpers/dimensions/positions.ts';
 import type { Point, ViewPoint } from './drawing-base.ts';
 
@@ -287,7 +287,7 @@ const defaultOptions: TriangleDrawingToolOptions = {
 	},
 };
 
-class Triangle extends PluginBase {
+class Triangle extends ChartInstrumentBase {
 	_options: TriangleDrawingToolOptions;
 	_p1: Point;
 	_p2: Point;

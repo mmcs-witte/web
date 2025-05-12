@@ -9,7 +9,7 @@ import type {
 } from 'lightweight-charts';
 import { ensureDefined } from '../helpers/assertions.ts';
 
-export abstract class PluginBase implements ISeriesPrimitive<Time> {
+export abstract class ChartInstrumentBase implements ISeriesPrimitive<Time> {
 	private _chart: IChartApi | undefined = undefined;
 	private _series: ISeriesApi<keyof SeriesOptionsMap> | undefined = undefined;
 

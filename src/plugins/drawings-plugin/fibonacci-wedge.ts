@@ -16,6 +16,7 @@ import type {
 	PrimitiveHoveredItem,
 } from 'lightweight-charts';
 import { Point as Point2D, Segment } from '@flatten-js/core';
+
 import { Vector as Vector2D } from '@flatten-js/core';
 import { DrawingBase, DrawingToolBase, RectangleAxisPaneRenderer, type Point, type ViewPoint } from './drawing-base.ts';
 import { MathHelper } from './math-helper.ts';

@@ -17,7 +17,7 @@ import {
 } from 'lightweight-charts';
 
 import { ensureDefined } from '../../helpers/assertions.ts';
-import { PluginBase } from '../plugin-base.ts';
+import { ChartInstrumentBase } from '../chart-instrument-base.ts';
 import { positionsBox } from '../../helpers/dimensions/positions.ts';
 import { Point as Point2D, Vector as Vector2D } from '@flatten-js/core';
 import { RectangleAxisPaneRenderer, type Point, type ViewPoint } from './drawing-base.ts';
@@ -366,7 +366,7 @@ const defaultOptions: FibSpiralDrawingToolOptions = {
 	},
 };
 
-class FibSpiral extends PluginBase {
+class FibSpiral extends ChartInstrumentBase {
 	_options: FibSpiralDrawingToolOptions;
 	_p1: Point;
 	_p2: Point;

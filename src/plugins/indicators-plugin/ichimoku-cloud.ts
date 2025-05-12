@@ -14,7 +14,7 @@ import type {
 	SeriesType,
 	Time,
 } from 'lightweight-charts';
-import { PluginBase } from '../plugin-base.ts';
+import { ChartInstrumentBase } from '../chart-instrument-base.ts';
 import { cloneReadonly } from '../../helpers/simple-clone.ts';
 import { ClosestTimeIndexFinder } from '../../helpers/closest-index.ts';
 import { UpperLowerInRange } from '../../helpers/min-max-in-range.ts';
@@ -133,7 +133,7 @@ const defaults: Required<BandsIndicatorOptions> = {
 	lineWidth: 1,
 };
 
-export class BandsIndicator extends PluginBase implements ISeriesPrimitive<Time> {
+export class BandsIndicator extends ChartInstrumentBase implements ISeriesPrimitive<Time> {
 	_paneViews: BandsIndicatorPaneView[];
 	_seriesData: SeriesDataItemTypeMap[SeriesType][] = [];
 	_bandsData: BandData[] = [];

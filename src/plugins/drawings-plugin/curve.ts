@@ -16,7 +16,7 @@ import type {
 	PrimitiveHoveredItem,
 } from 'lightweight-charts';
 import { ensureDefined } from '../../helpers/assertions.ts';
-import { PluginBase } from '../plugin-base.ts';
+import { ChartInstrumentBase } from '../chart-instrument-base.ts';
 import { positionsBox } from '../../helpers/dimensions/positions.ts';
 import { Point as Point2D } from '@flatten-js/core';
 import { Vector as Vector2D } from '@flatten-js/core';
