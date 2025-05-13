@@ -75,7 +75,7 @@ export class RectangleAxisPaneRenderer implements IPrimitivePaneRenderer {
 export class DrawingBase<DrawingOptions> extends ChartInstrumentBase {
   _options: DrawingOptions;
   _points: Point[];
-	_bounds: DrawingBounds;
+  _bounds: DrawingBounds;
 
   constructor(
     points: Point[],
@@ -86,9 +86,9 @@ export class DrawingBase<DrawingOptions> extends ChartInstrumentBase {
     this._points = points;
 
     this._bounds = { _minTime: null, _maxTime: null, _minPrice: null, _maxPrice: null };
-		this._points.forEach((point) => {
-			this._updateDrawingBounds(point);
-		})
+    this._points.forEach((point) => {
+      this._updateDrawingBounds(point);
+    })
 
     this._options = {
       ...defaultOptions,
@@ -120,12 +120,12 @@ export class DrawingBase<DrawingOptions> extends ChartInstrumentBase {
   }
 
   protected _updateDrawingBounds(point: Point) {
-		this._bounds._minPrice = this._bounds._minPrice == null ? point.price : Math.min(this._bounds._minPrice, point.price);
-		this._bounds._maxPrice = this._bounds._maxPrice == null ? point.price : Math.max(this._bounds._maxPrice, point.price);
+    this._bounds._minPrice = this._bounds._minPrice == null ? point.price : Math.min(this._bounds._minPrice, point.price);
+    this._bounds._maxPrice = this._bounds._maxPrice == null ? point.price : Math.max(this._bounds._maxPrice, point.price);
 
-		this._bounds._minTime = this._bounds._minTime == null ? point.time : Math.min(this._bounds._minTime, point.time);
-		this._bounds._maxTime = this._bounds._maxTime == null ? point.time : Math.max(this._bounds._maxTime, point.time);
-	}
+    this._bounds._minTime = this._bounds._minTime == null ? point.time : Math.min(this._bounds._minTime, point.time);
+    this._bounds._maxTime = this._bounds._maxTime == null ? point.time : Math.max(this._bounds._maxTime, point.time);
+  }
 }
 
 export type DrawingConstructor<TOptions, TDrawing extends DrawingBase<TOptions>> =
@@ -204,7 +204,7 @@ export class DrawingToolBase<
       return;
     }
     const newPoint: Point = { time: param.time, price };
-    
+
     if (this._previewDrawing == null) {
       this._addPointToCache(newPoint);
       this._addPointToCache(newPoint);
@@ -246,7 +246,7 @@ export class DrawingToolBase<
   protected _addNewDrawing(points: Point[]) {
     const clonnedPoints: Point[] = [];
     points.forEach(val => clonnedPoints.push(Object.assign({}, val)));
-    
+
     const drawing = new this.DrawingClass(
       clonnedPoints,
       this._defaultOptions,
@@ -263,7 +263,7 @@ export class DrawingToolBase<
   protected _addPreviewDrawing(points: Point[]) {
     const clonnedPoints: Point[] = [];
     points.forEach(val => clonnedPoints.push(Object.assign({}, val)));
-    
+
     this._previewDrawing = new this.PreviewDrawingClass(
       clonnedPoints,
       this._defaultOptions,
