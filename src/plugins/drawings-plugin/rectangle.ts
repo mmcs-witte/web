@@ -53,38 +53,38 @@ class RectanglePaneRenderer implements IPrimitivePaneRenderer {
       const drawingPoint2: ViewPoint = calculateDrawingPoint(this._points[1]);
       ctx.fillStyle = this._options.fillColor;
       ctx.fillRect(
-      	Math.min(drawingPoint1.x, drawingPoint2.x),
-      	Math.min(drawingPoint1.y, drawingPoint2.y),
-      	Math.abs(drawingPoint1.x - drawingPoint2.x),
-      	Math.abs(drawingPoint1.y - drawingPoint2.y));
+        Math.min(drawingPoint1.x, drawingPoint2.x),
+        Math.min(drawingPoint1.y, drawingPoint2.y),
+        Math.abs(drawingPoint1.x - drawingPoint2.x),
+        Math.abs(drawingPoint1.y - drawingPoint2.y));
     });
   }
-    hitTest(x: number, y: number): PrimitiveHoveredItem | null {
-      if (this._points.length < 2) {
-        return;
-      }
-  
-      const hitTestPoint: Point2D = new Point2D(x, y);
-
-      const bb: Box = new Box(
-        Math.min(this._points[0].x, this._points[1].x),
-        Math.min(this._points[0].y, this._points[1].y),
-        Math.max(this._points[0].x, this._points[1].x),
-        Math.max(this._points[0].y, this._points[1].y),
-        )
-  
-      const hit: boolean = CollisionHelper.IsPointInRectangle(hitTestPoint, bb);
-  
-      if (hit) {
-        return {
-          cursorStyle: "grab",
-          externalId: "rectangle-drawing",
-          zOrder: "top",
-        };
-      } else {
-        return null;
-      }
+  hitTest(x: number, y: number): PrimitiveHoveredItem | null {
+    if (this._points.length < 2) {
+      return;
     }
+
+    const hitTestPoint: Point2D = new Point2D(x, y);
+
+    const bb: Box = new Box(
+      Math.min(this._points[0].x, this._points[1].x),
+      Math.min(this._points[0].y, this._points[1].y),
+      Math.max(this._points[0].x, this._points[1].x),
+      Math.max(this._points[0].y, this._points[1].y),
+    )
+
+    const hit: boolean = CollisionHelper.IsPointInRectangle(hitTestPoint, bb);
+
+    if (hit) {
+      return {
+        cursorStyle: "grab",
+        externalId: "rectangle-drawing",
+        zOrder: "top",
+      };
+    } else {
+      return null;
+    }
+  }
 }
 class RectanglePaneView implements IPrimitivePaneView {
   _source: Rectangle;

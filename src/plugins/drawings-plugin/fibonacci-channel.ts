@@ -10,36 +10,31 @@ import type {
 	PrimitivePaneViewZOrder,
 	SeriesType,
 	Time,
+	PrimitiveHoveredItem,
 } from 'lightweight-charts';
 
 import {
 	isBusinessDay
 } from 'lightweight-charts';
 
-import { ensureDefined } from '../../helpers/assertions.ts';
-import { ChartInstrumentBase } from '../chart-instrument-base.ts';
-import { positionsBox } from '../../helpers/dimensions/positions.ts';
-import { RectangleAxisPaneRenderer, type Point, type ViewPoint } from './drawing-base.ts';
+import { DrawingBase, DrawingToolBase, RectangleAxisPaneRenderer, type Point, type ViewPoint } from './drawing-base.ts';
+import { CollisionHelper } from './collision-helper.ts';
+import { Point as Point2D } from '@flatten-js/core';
+import { Segment } from '@flatten-js/core';
 
 class FibChannelPaneRenderer implements IPrimitivePaneRenderer {
-	_p1: ViewPoint;
-	_p2: ViewPoint;
-	_fillColor: string;
+	_points: ViewPoint[];
+	_options: FibChannelOptions;
 
-	constructor(p1: ViewPoint, p2: ViewPoint, fillColor: string) {
-		this._p1 = p1;
-		this._p2 = p2;
-		this._fillColor = fillColor;
+	constructor(points: ViewPoint[], options: FibChannelOptions) {
+		this._points = points;
+		this._options = options;
 	}
 	draw(target: CanvasRenderingTarget2D) {
 		target.useBitmapCoordinateSpace(scope => {
-			if (
-				this._p1.x === null ||
-				this._p1.y === null ||
-				this._p2.x === null ||
-				this._p2.y === null
-			)
+			if (this._points.length < 2) {
 				return;
+			}
 
 			const ctx = scope.context;
 
@@ -50,8 +45,8 @@ class FibChannelPaneRenderer implements IPrimitivePaneRenderer {
 				};
 			};
 
-			const drawingPoint1: ViewPoint = calculateDrawingPoint({ x: this._p1.x, y: this._p1.y });
-			const drawingPoint2: ViewPoint = calculateDrawingPoint({ x: this._p2.x, y: this._p2.y });
+			const drawingPoint1: ViewPoint = calculateDrawingPoint(this._points[0]);
+			const drawingPoint2: ViewPoint = calculateDrawingPoint(this._points[1]);
 
 			const high = Math.min(drawingPoint1.y, drawingPoint2.y);
 			const low = Math.max(drawingPoint1.y, drawingPoint2.y);
@@ -59,9 +54,8 @@ class FibChannelPaneRenderer implements IPrimitivePaneRenderer {
 
 			ctx.font = '36px Arial';
 
-			const fibonacciLevels = [0, 0.236, 0.382, 0.5, 0.618, 0.786, 1];
-			const fibonacciLineColors = ['rgba(234, 53, 40, 0.93)', 'rgba(244, 244, 19, 0.94)', 'rgba(35, 220, 87, 0.75)',
-				'rgba(7, 227, 179, 0.75)', 'rgba(35, 186, 220, 0.75)', 'rgba(149, 35, 220, 0.75)'];
+			const fibonacciLevels = this._options.fibonacciLevels;
+			const fibonacciLineColors = this._options.fibonacciLineColors;
 
 			const oldGlobalAlpha = ctx.globalAlpha;
 			ctx.globalAlpha = 0.25;
@@ -103,41 +97,78 @@ class FibChannelPaneRenderer implements IPrimitivePaneRenderer {
 			}
 		});
 	}
+
+	hitTest(x: number, y: number): PrimitiveHoveredItem | null {
+		if (this._points.length < 2) {
+			return;
+		}
+
+		const tolerance: number = 3e-0;
+		let hit: boolean = false;
+		const hitTestPoint: Point2D = new Point2D(x, y);
+
+		const high = Math.min(this._points[0].y, this._points[1].y);
+		const low = Math.max(this._points[0].y, this._points[1].y);
+		const height = low - high;
+
+		for (let i: number = 0; i < this._options.fibonacciLevels.length; i++) {
+			const level = this._options.fibonacciLevels[i];
+			const y = low - height * level;
+			const line = new Segment(new Point2D(this._points[0].x, y), new Point2D(this._points[1].x, y));
+			if (line.distanceTo(hitTestPoint)[0] < tolerance) {
+				hit = true;
+				break;
+			}
+		}
+		
+		if (hit) {
+			return {
+				cursorStyle: "grab",
+				externalId: "fib-channel-drawing",
+				zOrder: "top",
+			};
+		} else {
+			return null;
+		}
+	}
 }
 
 class FibChannelPaneView implements IPrimitivePaneView {
 	_source: FibChannel;
-	_p1: ViewPoint = { x: null, y: null };
-	_p2: ViewPoint = { x: null, y: null };
+	_points: Point[];
+	_drawingPoints: ViewPoint[];
 
 	constructor(source: FibChannel) {
 		this._source = source;
+		this._points = source._points;
+		this._drawingPoints = new Array<ViewPoint>(source._points.length);
 	}
 
 	update() {
+		this._points = this._source._points;
+		this._drawingPoints = new Array<ViewPoint>(this._source._points.length);
+
 		const series = this._source.series;
-		const y1 = series.priceToCoordinate(this._source._p1.price);
-		const y2 = series.priceToCoordinate(this._source._p2.price);
 		const timeScale = this._source.chart.timeScale();
-		const x1 = timeScale.timeToCoordinate(this._source._p1.time);
-		const x2 = timeScale.timeToCoordinate(this._source._p2.time);
-		this._p1 = { x: x1, y: y1 };
-		this._p2 = { x: x2, y: y2 };
+		for (let i = 0; i < this._points.length; ++i) {
+			const x = timeScale.timeToCoordinate(this._points[i].time);
+			const y = series.priceToCoordinate(this._points[i].price);
+			this._drawingPoints[i] = { x: x, y: y };
+		}
 	}
 
 	renderer() {
 		return new FibChannelPaneRenderer(
-			this._p1,
-			this._p2,
-			this._source._options.fillColor
+			this._drawingPoints,
+			this._source._options,
 		);
 	}
 }
 
-abstract class RectangleAxisPaneView implements IPrimitivePaneView {
+abstract class FibChannelAxisPaneView implements IPrimitivePaneView {
 	_source: FibChannel;
-	_p1: number | null = null;
-	_p2: number | null = null;
+	_minPoint: number | null = null;
+	_maxPoint: number | null = null;
 	_vertical: boolean = false;
 
 	constructor(source: FibChannel, vertical: boolean) {
@@ -148,13 +179,13 @@ abstract class RectangleAxisPaneView implements IPrimitivePaneView {
 	abstract getPoints(): [Coordinate | null, Coordinate | null];
 
 	update() {
-		[this._p1, this._p2] = this.getPoints();
+		[this._minPoint, this._maxPoint] = this.getPoints();
 	}
 
 	renderer() {
 		return new RectangleAxisPaneRenderer(
-			this._p1,
-			this._p2,
+			this._minPoint,
+			this._maxPoint,
 			this._source._options.fillColor,
 			this._vertical
 		);
@@ -164,25 +195,25 @@ abstract class RectangleAxisPaneView implements IPrimitivePaneView {
 	}
 }
 
-class RectanglePriceAxisPaneView extends RectangleAxisPaneView {
+class FibChannelPriceAxisPaneView extends FibChannelAxisPaneView {
 	getPoints(): [Coordinate | null, Coordinate | null] {
 		const series = this._source.series;
-		const y1 = series.priceToCoordinate(this._source._p1.price);
-		const y2 = series.priceToCoordinate(this._source._p2.price);
+		const y1 = series.priceToCoordinate(this._source._bounds._minPrice);
+		const y2 = series.priceToCoordinate(this._source._bounds._maxPrice);
 		return [y1, y2];
 	}
 }
 
-class RectangleTimeAxisPaneView extends RectangleAxisPaneView {
+class FibChannelTimeAxisPaneView extends FibChannelAxisPaneView {
 	getPoints(): [Coordinate | null, Coordinate | null] {
 		const timeScale = this._source.chart.timeScale();
-		const x1 = timeScale.timeToCoordinate(this._source._p1.time);
-		const x2 = timeScale.timeToCoordinate(this._source._p2.time);
+		const x1 = timeScale.timeToCoordinate(this._source._bounds._minTime);
+		const x2 = timeScale.timeToCoordinate(this._source._bounds._maxTime);
 		return [x1, x2];
 	}
 }
 
-abstract class RectangleAxisView implements ISeriesPrimitiveAxisView {
+abstract class FibChannelAxisView implements ISeriesPrimitiveAxisView {
 	_source: FibChannel;
 	_p: Point;
 	_pos: Coordinate | null = null;
@@ -217,7 +248,7 @@ abstract class RectangleAxisView implements ISeriesPrimitiveAxisView {
 	}
 }
 
-class RectangleTimeAxisView extends RectangleAxisView {
+class FibChannelTimeAxisView extends FibChannelAxisView {
 	update() {
 		const timeScale = this._source.chart.timeScale();
 		this._pos = timeScale.timeToCoordinate(this._p.time);
@@ -227,7 +258,7 @@ class RectangleTimeAxisView extends RectangleAxisView {
 	}
 }
 
-class RectanglePriceAxisView extends RectangleAxisView {
+class FibChannelPriceAxisView extends FibChannelAxisView {
 	update() {
 		const series = this._source.series;
 		this._pos = series.priceToCoordinate(this._p.price);
@@ -238,9 +269,12 @@ class RectanglePriceAxisView extends RectangleAxisView {
 }
 
 
-export interface FibChannelDrawingToolOptions {
+export interface FibChannelOptions {
 	fillColor: string;
 	previewFillColor: string;
+	fibonacciLevels: number[];
+	fibonacciFillColors: string[];
+	fibonacciLineColors: string[];
 	labelColor: string;
 	labelTextColor: string;
 	showLabels: boolean;
@@ -248,9 +282,12 @@ export interface FibChannelDrawingToolOptions {
 	timeLabelFormatter: (time: Time) => string;
 }
 
-const defaultOptions: FibChannelDrawingToolOptions = {
+const defaultOptions: FibChannelOptions = {
 	fillColor: 'rgba(200, 50, 100, 0.75)',
 	previewFillColor: 'rgba(200, 50, 100, 0.25)',
+	fibonacciLevels: [0, 0.236, 0.382, 0.5, 0.618, 0.786, 1, 1.256],
+	fibonacciFillColors: ['rgba(234, 53, 40, 0.3)', 'rgba(244, 244, 19, 0.3)', 'rgba(35, 220, 87, 0.3)', 'rgba(7, 227, 179, 0.3)', 'rgba(35, 186, 220, 0.3)', 'rgba(149, 35, 220, 0.3)'],
+	fibonacciLineColors: ['rgb(234, 53, 40)', 'rgb(244, 244, 19)', 'rgb(35, 220, 87)', 'rgb(7, 227, 179)', 'rgb(35, 186, 220)', 'rgb(149, 35, 220)'],
 	labelColor: 'rgba(200, 50, 100, 1)',
 	labelTextColor: 'white',
 	showLabels: true,
@@ -264,47 +301,50 @@ const defaultOptions: FibChannelDrawingToolOptions = {
 	},
 };
 
-class FibChannel extends ChartInstrumentBase {
-	_options: FibChannelDrawingToolOptions;
-	_p1: Point;
-	_p2: Point;
+class FibChannel extends DrawingBase<FibChannelOptions> {
 	_paneViews: FibChannelPaneView[];
-	_timeAxisViews: RectangleTimeAxisView[];
-	_priceAxisViews: RectanglePriceAxisView[];
-	_priceAxisPaneViews: RectanglePriceAxisPaneView[];
-	_timeAxisPaneViews: RectangleTimeAxisPaneView[];
+	_timeAxisViews: FibChannelTimeAxisView[] = [];
+	_priceAxisViews: FibChannelPriceAxisView[] = [];
+	_priceAxisPaneViews: FibChannelPriceAxisPaneView[];
+	_timeAxisPaneViews: FibChannelTimeAxisPaneView[];
 
-	constructor(
-		p1: Point,
-		p2: Point,
-		options: Partial<FibChannelDrawingToolOptions> = {}
-	) {
-		super();
-		this._p1 = p1;
-		this._p2 = p2;
-		this._options = {
-			...defaultOptions,
-			...options,
-		};
+	constructor(points: Point[], options: Partial<FibChannelOptions> = {}) {
+		super(points, defaultOptions, options);
+
 		this._paneViews = [new FibChannelPaneView(this)];
-		this._timeAxisViews = [
-			new RectangleTimeAxisView(this, p1),
-			new RectangleTimeAxisView(this, p2),
-		];
-		this._priceAxisViews = [
-			new RectanglePriceAxisView(this, p1),
-			new RectanglePriceAxisView(this, p2),
-		];
-		this._priceAxisPaneViews = [new RectanglePriceAxisPaneView(this, true)];
-		this._timeAxisPaneViews = [new RectangleTimeAxisPaneView(this, false)];
+		points.forEach((point) => {
+			this._timeAxisViews.push(new FibChannelTimeAxisView(this, point));
+			this._priceAxisViews.push(new FibChannelPriceAxisView(this, point));
+		});
+		this._priceAxisPaneViews = [new FibChannelPriceAxisPaneView(this, true)];
+		this._timeAxisPaneViews = [new FibChannelTimeAxisPaneView(this, false)];
+	}
+
+	public override addPoint(p: Point) {
+		this._updateDrawingBounds(p);
+		this._points.push(p);
+		this._timeAxisViews.push(new FibChannelTimeAxisView(this, p));
+		this._priceAxisViews.push(new FibChannelPriceAxisView(this, p));
+		this.requestUpdate();
+	}
+
+	public override updatePoint(p: Point, index: number) {
+		if (index >= this._points.length || index < 0) return;
+
+		this._points[index] = p;
+		this._paneViews[0].update();
+		this._priceAxisViews[index].movePoint(p);
+		this._timeAxisViews[index].movePoint(p);
+
+		this.requestUpdate();
 	}
 
 	updateAllViews() {
-		this._paneViews.forEach(pw => pw.update());
-		this._timeAxisViews.forEach(pw => pw.update());
-		this._priceAxisViews.forEach(pw => pw.update());
-		this._priceAxisPaneViews.forEach(pw => pw.update());
-		this._timeAxisPaneViews.forEach(pw => pw.update());
+		this._paneViews.forEach((pw) => pw.update());
+		this._timeAxisViews.forEach((pw) => pw.update());
+		this._priceAxisViews.forEach((pw) => pw.update());
+		this._priceAxisPaneViews.forEach((pw) => pw.update());
+		this._timeAxisPaneViews.forEach((pw) => pw.update());
 	}
 
 	priceAxisViews() {
@@ -327,144 +367,59 @@ class FibChannel extends ChartInstrumentBase {
 		return this._timeAxisPaneViews;
 	}
 
-	applyOptions(options: Partial<FibChannelDrawingToolOptions>) {
+	applyOptions(options: Partial<FibChannelOptions>) {
 		this._options = { ...this._options, ...options };
 		this.requestUpdate();
 	}
+
+	hitTest(x: number, y: number): PrimitiveHoveredItem | null {
+		if (this._paneViews.length > 0) {
+		  return this._paneViews[0].renderer()?.hitTest(x, y) ?? null;
+		}
+		return null;
+	}
 }
 
-class PreviewFibChannel extends FibChannel {
-	constructor(
-		p1: Point,
-		p2: Point,
-		options: Partial<FibChannelDrawingToolOptions> = {}
-	) {
-		super(p1, p2, options);
+class FibChannelPreview extends FibChannel {
+	constructor(points: Point[], options: Partial<FibChannelOptions> = {}) {
+		super(points, options);
 		this._options.fillColor = this._options.previewFillColor;
 	}
-
-	public updateEndPoint(p: Point) {
-		this._p2 = p;
-		this._paneViews[0].update();
-		this._timeAxisViews[1].movePoint(p);
-		this._priceAxisViews[1].movePoint(p);
-		this.requestUpdate();
-	}
 }
 
-export class FibChannelDrawingTool {
-	private _chart: IChartApi | undefined;
-	private _series: ISeriesApi<SeriesType> | undefined;
-	private _defaultOptions: Partial<FibChannelDrawingToolOptions>;
-	private _drawings: FibChannel[];
-	private _previewDrawing: PreviewFibChannel | undefined = undefined;
-	private _points: Point[] = [];
-	private _drawing: boolean = false;
-
+export class FibChannelDrawingTool extends DrawingToolBase<
+	DrawingBase<FibChannelOptions>,
+	DrawingBase<FibChannelOptions>,
+	FibChannelOptions
+> {
 	constructor(
 		chart: IChartApi,
 		series: ISeriesApi<SeriesType>,
-		options: Partial<FibChannelDrawingToolOptions>
+		options: Partial<FibChannelOptions>
 	) {
-		this._chart = chart;
-		this._series = series;
-		this._defaultOptions = options;
-		this._drawings = [];
-		this._chart.subscribeClick(this._clickHandler);
-		this._chart.subscribeCrosshairMove(this._moveHandler);
+		super(FibChannel, FibChannelPreview, chart, series, defaultOptions, options);
 	}
 
-	private _clickHandler = (param: MouseEventParams) => this._onClick(param);
-	private _moveHandler = (param: MouseEventParams) => this._onMouseMove(param);
-
-	remove() {
-		this.stopDrawing();
-		if (this._chart) {
-			this._chart.unsubscribeClick(this._clickHandler);
-			this._chart.unsubscribeCrosshairMove(this._moveHandler);
-		}
-		this._drawings.forEach(rectangle => {
-			this._removeRectangle(rectangle);
-		});
-		this._drawings = [];
-		this._removePreviewRectangle();
-		this._chart = undefined;
-		this._series = undefined;
-	}
-
-	startDrawing(): void {
-		this._drawing = true;
-		this._points = [];
-	}
-
-	stopDrawing(): void {
-		this._drawing = false;
-		this._points = [];
-	}
-
-	isDrawing(): boolean {
-		return this._drawing;
-	}
-
-	private _onClick(param: MouseEventParams) {
+	protected override _onClick(param: MouseEventParams) {
 		if (!this._drawing || !param.point || !param.time || !this._series) return;
 		const price = this._series.coordinateToPrice(param.point.y);
 		if (price === null) {
 			return;
 		}
-		this._addPoint({
-			time: param.time,
-			price,
-		});
-	}
 
-	private _onMouseMove(param: MouseEventParams) {
-		if (!this._drawing || !param.point || !param.time || !this._series) return;
-		const price = this._series.coordinateToPrice(param.point.y);
-		if (price === null) {
-			return;
-		}
-		if (this._previewDrawing) {
-			this._previewDrawing.updateEndPoint({
-				time: param.time,
-				price,
-			});
-		}
-	}
-
-	private _addPoint(p: Point) {
-		this._points.push(p);
-		if (this._points.length >= 2) {
-			this._addNewRectangle(this._points[0], this._points[1]);
-			this.stopDrawing();
-			this._removePreviewRectangle();
-		}
-		if (this._points.length === 1) {
-			this._addPreviewRectangle(this._points[0]);
-		}
-	}
-
-	private _addNewRectangle(p1: Point, p2: Point) {
-		const rectangle = new FibChannel(p1, p2, { ...this._defaultOptions });
-		this._drawings.push(rectangle);
-		ensureDefined(this._series).attachPrimitive(rectangle);
-	}
-
-	private _removeRectangle(rectangle: FibChannel) {
-		ensureDefined(this._series).detachPrimitive(rectangle);
-	}
-
-	private _addPreviewRectangle(p: Point) {
-		this._previewDrawing = new PreviewFibChannel(p, p, {
-			...this._defaultOptions,
-		});
-		ensureDefined(this._series).attachPrimitive(this._previewDrawing);
-	}
-
-	private _removePreviewRectangle() {
-		if (this._previewDrawing) {
-			ensureDefined(this._series).detachPrimitive(this._previewDrawing);
-			this._previewDrawing = undefined;
+		const newPoint: Point = { time: param.time, price };
+		if (this._previewDrawing == null) {
+			this._addPointToCache(newPoint);
+			this._addPointToCache(newPoint);
+			this._addPreviewDrawing(this._pointsCache);
+		} else {
+			this._addPointToCache(newPoint);
+			this._previewDrawing.addPoint(newPoint);
+			if (this._pointsCache.length > 2) {
+				this._removePreviewDrawing();
+				this._addNewDrawing(this._pointsCache.slice(0, 2));
+				this.stopDrawing();
+			}
 		}
 	}
 }
