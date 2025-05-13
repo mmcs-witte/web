@@ -116,7 +116,7 @@ const createDrawingTools = (chart, series) => {
     "curve": new CurveDrawingTool(chart, series),
     "trend_line": new TrendLineDrawingTool(chart, series),
     "polyline": new PolylineDrawingTool(chart, series),
-    "time_line": new FibWedgeDrawingTool(chart, series), 
+    "time_line": new TimeLineDrawingTool(chart, series), 
     //"fibonacci_wedge": new FibWedgeDrawingTool(chart, series), 
     //"time_line": new TimeLineDrawingTool(chart, series),
   }

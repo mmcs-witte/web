@@ -1,4 +1,7 @@
-import type { CanvasRenderingTarget2D } from 'fancy-canvas';
+import type { CanvasRenderingTarget2D, BitmapCoordinatesRenderingScope } from 'fancy-canvas';
+import {
+  isBusinessDay
+} from 'lightweight-charts';
 import type {
   Coordinate,
   IChartApi,
@@ -7,93 +10,206 @@ import type {
   IPrimitivePaneRenderer,
   IPrimitivePaneView,
   MouseEventParams,
+  PrimitivePaneViewZOrder,
   SeriesType,
   Time,
+  PrimitiveHoveredItem,
 } from 'lightweight-charts';
+import { DrawingBase, DrawingToolBase, RectangleAxisPaneRenderer, type Point, type ViewPoint } from './drawing-base.ts';
 
-import { ensureDefined } from '../../helpers/assertions.ts';
-import { ChartInstrumentBase } from '../chart-instrument-base.ts';
-import { positionsLine } from '../../helpers/dimensions/positions.ts';
-import type { Point } from './drawing-base.ts';
 
 class TimeLinePaneRenderer implements IPrimitivePaneRenderer {
-  _x: Coordinate | null = null;
+  _points: ViewPoint[];
   _options: TimeLineOptions;
-  constructor(x: Coordinate | null, options: TimeLineOptions) {
-    this._x = x;
+
+  constructor(points: ViewPoint[], options: TimeLineOptions) {
+    this._points = points;
     this._options = options;
   }
+
   draw(target: CanvasRenderingTarget2D) {
     target.useBitmapCoordinateSpace(scope => {
-      if (this._x === null) return;
+      if (this._points.length < 1) {
+        return;
+      }
+
       const ctx = scope.context;
-      const position = positionsLine(
-        this._x,
-        scope.horizontalPixelRatio,
-        this._options.width
-      );
-      ctx.fillStyle = this._options.color;
-      ctx.fillRect(
-        position.position,
-        0,
-        position.length,
-        scope.bitmapSize.height
-      );
+
+      const calculateDrawingPoint = (point: ViewPoint): ViewPoint => {
+        return {
+          x: Math.round(point.x * scope.horizontalPixelRatio),
+          y: Math.round(point.y * scope.verticalPixelRatio)
+        };
+      };
+
+      for (let i = 0; i < this._points.length; i++) {
+        this._points[i] = calculateDrawingPoint(this._points[i]);
+      }
+
+      ctx.lineWidth =  this._options.width;
+      ctx.strokeStyle = this._options.color;
+
+      ctx.beginPath();
+      ctx.moveTo(this._points[0].x, 0);
+      ctx.lineTo(this._points[0].x, scope.bitmapSize.height);
+      ctx.stroke();
     });
+  }
+
+  hitTest(x: number, y: number): PrimitiveHoveredItem | null {
+    if (this._points.length < 1) {
+      return null;
+    }
+
+    const tolerance: number = 3e-0;
+    const hit: boolean = Math.abs(x - this._points[0].x) < tolerance;
+
+    if (hit) {
+      return {
+        cursorStyle: "grab",
+        externalId: 'time-line-drawing',
+        zOrder: 'top',
+      };
+    } else {
+      return null;
+    }
   }
 }
 
 class TimeLinePaneView implements IPrimitivePaneView {
   _source: TimeLine;
-  _x: Coordinate | null = null;
-  _options: TimeLineOptions;
+  _points: Point[];
+  _drawingPoints: ViewPoint[];
 
-  constructor(source: TimeLine, options: TimeLineOptions) {
+  constructor(source: TimeLine) {
     this._source = source;
-    this._options = options;
+    this._points = source._points;
+    this._drawingPoints = new Array<ViewPoint>(source._points.length);
   }
+
   update() {
-    const timeScale = this._source.chart().timeScale();
-    this._x = timeScale.timeToCoordinate(this._source._p1.time);
+    this._points = this._source._points;
+    this._drawingPoints = new Array<ViewPoint>(this._source._points.length);
+
+    const series = this._source.series;
+    const timeScale = this._source.chart.timeScale();
+    for (let i = 0; i < this._points.length; ++i) {
+      const x = timeScale.timeToCoordinate(this._points[i].time);
+      const y = series.priceToCoordinate(this._points[i].price);
+      this._drawingPoints[i] = { x: x, y: y };
+    }
   }
+
   renderer() {
-    return new TimeLinePaneRenderer(this._x, this._options);
+    return new TimeLinePaneRenderer(
+      this._drawingPoints,
+      this._source._options,
+    );
   }
 }
 
-class TimeLineTimeAxisView implements ISeriesPrimitiveAxisView {
+abstract class TimeLineAxisPaneView implements IPrimitivePaneView {
   _source: TimeLine;
-  _x: Coordinate | null = null;
-  _options: TimeLineOptions;
+  _minPoint: number | null = null;
+  _maxPoint: number | null = null;
+  _vertical: boolean = false;
 
-  constructor(source: TimeLine, options: TimeLineOptions) {
+  constructor(source: TimeLine, vertical: boolean) {
     this._source = source;
-    this._options = options;
+    this._vertical = vertical;
   }
+
+  abstract getPoints(): [Coordinate | null, Coordinate | null];
+
   update() {
-    const timeScale = this._source.chart().timeScale();
-    this._x = timeScale.timeToCoordinate(this._source._p1.time);
+    [this._minPoint, this._maxPoint] = this.getPoints();
   }
-  visible() {
-    return this._options.showLabel;
+
+  renderer() {
+    return new RectangleAxisPaneRenderer(
+      this._minPoint,
+      this._maxPoint,
+      this._source._options.color,
+      this._vertical
+    );
   }
-  tickVisible() {
-    return this._options.showLabel;
+  zOrder(): PrimitivePaneViewZOrder {
+    return 'bottom';
   }
+}
+
+class TimeLinePriceAxisPaneView extends TimeLineAxisPaneView {
+  getPoints(): [Coordinate | null, Coordinate | null] {
+    const series = this._source.series;
+    const y1 = series.priceToCoordinate(this._source._bounds._minPrice);
+    const y2 = series.priceToCoordinate(this._source._bounds._maxPrice);
+    return [y1, y2];
+  }
+}
+
+class FibWedgeTimeAxisPaneView extends TimeLineAxisPaneView {
+  getPoints(): [Coordinate | null, Coordinate | null] {
+    const timeScale = this._source.chart.timeScale();
+    const x1 = timeScale.timeToCoordinate(this._source._bounds._minTime);
+    const x2 = timeScale.timeToCoordinate(this._source._bounds._maxTime);
+    return [x1, x2];
+  }
+}
+
+abstract class TimeLineAxisView implements ISeriesPrimitiveAxisView {
+  _source: TimeLine;
+  _p: Point;
+  _pos: Coordinate | null = null;
+  constructor(source: TimeLine, p: Point) {
+    this._source = source;
+    this._p = p;
+  }
+  abstract update(): void;
+  abstract text(): string;
+
   coordinate() {
-    return this._x ?? 0;
+    return this._pos ?? -1;
   }
-  text() {
-    return this._options.labelText;
+
+  visible(): boolean {
+    return this._source._options.showLabels;
   }
+
+  tickVisible(): boolean {
+    return this._source._options.showLabels;
+  }
+
   textColor() {
-    return this._options.labelTextColor;
+    return this._source._options.labelTextColor;
   }
   backColor() {
-    return this._options.labelBackgroundColor;
+    return this._source._options.labelTextColor;
+  }
+  movePoint(p: Point) {
+    this._p = p;
+    this.update();
   }
 }
 
+class TimeLineTimeAxisView extends TimeLineAxisView {
+  update() {
+    const timeScale = this._source.chart.timeScale();
+    this._pos = timeScale.timeToCoordinate(this._p.time);
+  }
+  text() {
+    return this._source._options.timeLabelFormatter(this._p.time);
+  }
+}
+
+class TimeLinePriceAxisView extends TimeLineAxisView {
+  update() {
+    const series = this._source.series;
+    this._pos = series.priceToCoordinate(this._p.price);
+  }
+  text() {
+    return this._source._options.priceLabelFormatter(this._p.price);
+  }
+}
 
 export interface TimeLineOptions {
   color: string;
@@ -101,41 +217,80 @@ export interface TimeLineOptions {
   width: number;
   labelBackgroundColor: string;
   labelTextColor: string;
-  showLabel: boolean;
+  showLabels: boolean;
+  priceLabelFormatter: (price: number) => string;
+  timeLabelFormatter: (time: Time) => string;
 }
 
 const defaultOptions: TimeLineOptions = {
   color: 'green',
   labelText: '',
-  width: 3,
+  width: 4,
   labelBackgroundColor: 'green',
   labelTextColor: 'white',
-  showLabel: false,
+  showLabels: false,
+  priceLabelFormatter: (price: number) => price.toFixed(3), // => price.toFixed(2),
+  timeLabelFormatter: (time: Time) => {
+    if (typeof time == 'string') return time;
+    const date = isBusinessDay(time)
+      ? new Date(time.year, time.month, time.day)
+      : new Date(time * 1000);
+    return date.toLocaleDateString();
+  },
 };
-class TimeLine extends ChartInstrumentBase {
-  _p1: Point;
+
+class TimeLine extends DrawingBase<TimeLineOptions> {
   _paneViews: TimeLinePaneView[];
-  _timeAxisViews: TimeLineTimeAxisView[];
-  _options: TimeLineOptions;
+  _timeAxisViews: TimeLineTimeAxisView[] = [];
+  _priceAxisViews: TimeLinePriceAxisView[] = [];
+  _priceAxisPaneViews: TimeLinePriceAxisPaneView[];
+  _timeAxisPaneViews: FibWedgeTimeAxisPaneView[];
 
   constructor(
-    p1: Point,
+    points: Point[],
     options: Partial<TimeLineOptions> = {}
   ) {
-    super();
-    this._p1 = p1;
-    this._options = {
-      ...defaultOptions,
-      ...options,
-    };
+    super(points, defaultOptions, options);
 
-    this._paneViews = [new TimeLinePaneView(this, this._options)];
-    this._timeAxisViews = [new TimeLineTimeAxisView(this, this._options)];
+    this._paneViews = [new TimeLinePaneView(this)];
+    points.forEach(point => {
+      this._timeAxisViews.push(new TimeLineTimeAxisView(this, point));
+      this._priceAxisViews.push(new TimeLinePriceAxisView(this, point));
+    });
+    this._priceAxisPaneViews = [new TimeLinePriceAxisPaneView(this, true)];
+    this._timeAxisPaneViews = [new FibWedgeTimeAxisPaneView(this, false)];
+  }
+
+  public override addPoint(p: Point) {
+    this._updateDrawingBounds(p);
+    this._points.push(p);
+    this._timeAxisViews.push(new TimeLineTimeAxisView(this, p));
+    this._priceAxisViews.push(new TimeLinePriceAxisView(this, p));
+    this.requestUpdate();
+  }
+
+  public override updatePoint(p: Point, index: number) {
+    if (index >= this._points.length || index < 0)
+      return;
+
+    this._points[index] = p;
+    this._paneViews[0].update();
+    this._priceAxisViews[index].movePoint(p);
+    this._timeAxisViews[index].movePoint(p);
+
+    this.requestUpdate();
   }
 
   updateAllViews() {
     this._paneViews.forEach(pw => pw.update());
     this._timeAxisViews.forEach(pw => pw.update());
+    this._priceAxisViews.forEach(pw => pw.update());
+    this._priceAxisPaneViews.forEach(pw => pw.update());
+    this._timeAxisPaneViews.forEach(pw => pw.update());
+  }
+
+  priceAxisViews() {
+    return this._priceAxisViews;
   }
 
   timeAxisViews() {
@@ -146,95 +301,59 @@ class TimeLine extends ChartInstrumentBase {
     return this._paneViews;
   }
 
+  priceAxisPaneViews() {
+    return this._priceAxisPaneViews;
+  }
+
+  timeAxisPaneViews() {
+    return this._timeAxisPaneViews;
+  }
+
   applyOptions(options: Partial<TimeLineOptions>) {
     this._options = { ...this._options, ...options };
     this.requestUpdate();
   }
+
+  hitTest(x: number, y: number): PrimitiveHoveredItem | null {
+    if (this._paneViews.length > 0) {
+      return this._paneViews[0].renderer()?.hitTest(x, y) ?? null;
+    }
+    return null;
+  }
 }
 
-export class TimeLineDrawingTool {
-  private _chart: IChartApi | undefined;
-  private _series: ISeriesApi<SeriesType> | undefined;
-  private _defaultOptions: Partial<TimeLineOptions>;
-  private _drawings: TimeLine[];
-  private _points: Point[] = [];
-  private _drawing: boolean = false;
+class TimeLinePreview extends TimeLine {
+  constructor(
+    points: Point[],
+    options: Partial<TimeLineOptions> = {}
+  ) {
+    super(points, options);
+    this._options.color = this._options.color;
+  }
+}
 
+export class TimeLineDrawingTool extends DrawingToolBase<
+  DrawingBase<TimeLineOptions>,
+  DrawingBase<TimeLineOptions>,
+  TimeLineOptions> {
   constructor(
     chart: IChartApi,
     series: ISeriesApi<SeriesType>,
     options: Partial<TimeLineOptions>
   ) {
-    this._chart = chart;
-    this._series = series;
-    this._defaultOptions = options;
-    this._drawings = [];
-    this._chart.subscribeClick(this._clickHandler);
-    this._chart.subscribeCrosshairMove(this._moveHandler);
+    super(TimeLine, TimeLinePreview, chart, series, defaultOptions, options);
   }
 
-  private _clickHandler = (param: MouseEventParams) => this._onClick(param);
-  private _moveHandler = (param: MouseEventParams) => this._onMouseMove(param);
-
-  remove() {
-    this.stopDrawing();
-    if (this._chart) {
-      this._chart.unsubscribeClick(this._clickHandler);
-      this._chart.unsubscribeCrosshairMove(this._moveHandler);
-    }
-    this._drawings.forEach(rectangle => {
-      this._removeDrawing(rectangle);
-    });
-    this._drawings = [];
-    this._chart = undefined;
-    this._series = undefined;
-  }
-
-  startDrawing(): void {
-    this._drawing = true;
-    this._points = [];
-  }
-
-  stopDrawing(): void {
-    this._drawing = false;
-    this._points = [];
-  }
-
-  isDrawing(): boolean {
-    return this._drawing;
-  }
-
-  private _onClick(param: MouseEventParams) {
+  protected override _onClick(param: MouseEventParams) {
     if (!this._drawing || !param.point || !param.time || !this._series) return;
     const price = this._series.coordinateToPrice(param.point.y);
     if (price === null) {
       return;
     }
-    this._addPoint({
-      time: param.time,
-      price,
-    });
-  }
 
-  private _onMouseMove(param: MouseEventParams) {
-    return;
-  }
-
-  private _addPoint(p: Point) {
-    this._points.push(p);
-    if (this._points.length >= 1) {
-      this._addNewDrawing(this._points[0]);
-      this.stopDrawing();
-    }
-  }
-
-  private _addNewDrawing(p1: Point) {
-    const drawing = new TimeLine(p1, { ...this._defaultOptions });
-    this._drawings.push(drawing);
-    ensureDefined(this._series).attachPrimitive(drawing);
-  }
-
-  private _removeDrawing(drawing: TimeLine) {
-    ensureDefined(this._series).detachPrimitive(drawing);
+    const newPoint: Point = { time: param.time, price };
+    this._addPointToCache(newPoint);
+    this._addNewDrawing(this._pointsCache.slice(0, 1));
+    this.stopDrawing();
   }
 }
