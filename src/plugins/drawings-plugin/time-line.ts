@@ -183,7 +183,7 @@ abstract class TimeLineAxisView implements ISeriesPrimitiveAxisView {
     return this._source._options.labelTextColor;
   }
   backColor() {
-    return this._source._options.labelTextColor;
+    return this._source._options.labelBackgroundColor;
   }
   movePoint(p: Point) {
     this._p = p;

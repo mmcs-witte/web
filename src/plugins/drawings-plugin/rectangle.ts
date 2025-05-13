@@ -86,6 +86,7 @@ class RectanglePaneRenderer implements IPrimitivePaneRenderer {
     }
   }
 }
+
 class RectanglePaneView implements IPrimitivePaneView {
   _source: Rectangle;
   _points: Point[];

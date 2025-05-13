@@ -15,7 +15,7 @@ import {
 	BaselineSeries,
 } from 'lightweight-charts';
 import { AnchoredText } from "../plugins/drawings-plugin/anchored-text.ts";
-import { TrendLine, TrendLineDrawingTool } from '../plugins/drawings-plugin/trend-line.ts';
+import { TrendLineDrawingTool } from '../plugins/drawings-plugin/trend-line.ts';
 import { RectangleDrawingTool } from '../plugins/drawings-plugin/rectangle.ts';
 import { TriangleDrawingTool } from '../plugins/drawings-plugin/triangle.ts';
 import { FibChannelDrawingTool } from '../plugins/drawings-plugin/fibonacci-channel.ts';
@@ -136,17 +136,6 @@ drawingStore.$subscribe((mutation, store) => {
   selectedDrawingTool.value.startDrawing()
   drawingStore.currentDrawing = DrawingType.Arrow
 })
-
-const createTrendLine = (chart, series, point1, point2, width) => {
-  const trendLine = new TrendLine(chart, series, point1, point2, {
-    lineColor: 'red',
-	  width: width,
-	  showLabels: true,
-	  labelBackgroundColor: 'blue',
-	  labelTextColor: 'orange',
-	});
-  series.attachPrimitive(trendLine);
-};
 
 const createVolumeProfile = (chart, series, data) => {
   const basePrice = data[data.length - 50].value;

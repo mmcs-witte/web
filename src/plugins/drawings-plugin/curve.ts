@@ -178,51 +178,6 @@ class CurvePaneView implements IPrimitivePaneView {
 	}
 }
 
-class CurveAxisPaneRenderer implements IPrimitivePaneRenderer {
-	_p1: number | null;
-	_p2: number | null;
-	_p3: number | null;
-	_fillColor: string;
-	_vertical: boolean = false;
-
-	constructor(
-		p1: number | null,
-		p2: number | null,
-		p3: number | null,
-		fillColor: string,
-		vertical: boolean
-	) {
-		this._p1 = p1;
-		this._p2 = p2;
-		this._p3 = p3;
-		this._fillColor = fillColor;
-		this._vertical = vertical;
-	}
-
-	draw(target: CanvasRenderingTarget2D) {
-		target.useBitmapCoordinateSpace(scope => {
-			if (this._p1 === null || this._p2 === null || this._p3 === null) return;
-			const ctx = scope.context;
-			ctx.globalAlpha = 0.5;
-
-			const posStart: number = Math.min(this._p1, Math.min(this._p2, this._p3));
-			const posEnd: number = Math.max(this._p1, Math.max(this._p2, this._p3));
-			const positions = positionsBox(
-				posStart,
-				posEnd,
-				this._vertical ? scope.verticalPixelRatio : scope.horizontalPixelRatio
-			);
-
-			ctx.fillStyle = this._fillColor;
-			if (this._vertical) {
-				ctx.fillRect(0, positions.position, 15, positions.length);
-			} else {
-				ctx.fillRect(positions.position, 0, positions.length, 15);
-			}
-		});
-	}
-}
-
 abstract class CurveAxisPaneView implements IPrimitivePaneView {
 	_source: Curve;
 	_minPoint: number | null = null;
