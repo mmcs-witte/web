@@ -133,7 +133,7 @@ class FibWedgePaneRenderer implements IPrimitivePaneRenderer {
 	}
 
 	draw(target: CanvasRenderingTarget2D) {
-		target.useBitmapCoordinateSpace(scope => {
+		target.useBitmapCoordinateSpace((scope) => {
 			if (this._points.length < 2) {
 				return;
 			}
@@ -143,28 +143,31 @@ class FibWedgePaneRenderer implements IPrimitivePaneRenderer {
 			const calculateDrawingPoint = (point: ViewPoint): ViewPoint => {
 				return {
 					x: Math.round(point.x * scope.horizontalPixelRatio),
-					y: Math.round(point.y * scope.verticalPixelRatio)
+					y: Math.round(point.y * scope.verticalPixelRatio),
 				};
 			};
 
-			for (let i = 0; i < this._points.length; i++) {
-				this._points[i] = calculateDrawingPoint(this._points[i]);
-			}
+			const drawingPoint1: ViewPoint = calculateDrawingPoint(this._points[0]);
+			const drawingPoint2: ViewPoint = calculateDrawingPoint(this._points[1]);
+			const drawingPoint3: ViewPoint =
+				this._points.length > 2
+					? calculateDrawingPoint(this._points[2])
+					: drawingPoint2;
 
 			if (this._points.length < 3) {
 				ctx.beginPath();
-				ctx.moveTo(this._points[0].x, this._points[0].y);
-				ctx.lineTo(this._points[1].x, this._points[1].y);
+				ctx.moveTo(drawingPoint1.x, drawingPoint1.y);
+				ctx.lineTo(drawingPoint2.x, drawingPoint2.y);
 				ctx.strokeStyle = this._lineStyle;
 				ctx.lineWidth = scope.verticalPixelRatio;
 				ctx.stroke();
-			}
-			else {
+			} else {
 				const points: Point2D[] = [
-					new Point2D(this._points[0].x, this._points[0].y),
-					new Point2D(this._points[1].x, this._points[1].y),
-					new Point2D(this._points[2].x, this._points[2].y),
-				]
+					new Point2D(drawingPoint1.x, drawingPoint1.y),
+					new Point2D(drawingPoint2.x, drawingPoint2.y),
+					new Point2D(drawingPoint3.x, drawingPoint3.y),
+				];
+
 				drawFibWedge(scope, points, this._fibonacciLevels, this._fibonacciFillColors, this._fibonacciLineColors);
 			}
 		});
@@ -189,10 +192,11 @@ class FibWedgePaneRenderer implements IPrimitivePaneRenderer {
 
 		let hit: boolean = false;
 
-		if (dist1 < tolerance || dist2 < tolerance)
+		if (dist1 < tolerance || dist2 < tolerance) {
 			hit = true;
+		}
 
-		const radius: number = new Point2D(r1.x, r1.y).distanceTo(new Point2D(r2.x, r2.y))[0];
+		const radius: number = new Point2D(r1.x, r1.y).distanceTo(new Point2D(center.x, center.y))[0];
 
 		for (let i = 1; i < this._fibonacciLevels.length && !hit; i++) {
 			const level: number = this._fibonacciLevels[i];

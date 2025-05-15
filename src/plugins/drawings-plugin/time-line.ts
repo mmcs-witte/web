@@ -46,7 +46,7 @@ class TimeLinePaneRenderer implements IPrimitivePaneRenderer {
         this._points[i] = calculateDrawingPoint(this._points[i]);
       }
 
-      ctx.lineWidth =  this._options.width;
+      ctx.lineWidth = this._options.width;
       ctx.strokeStyle = this._options.color;
 
       ctx.beginPath();
@@ -74,6 +74,29 @@ class TimeLinePaneRenderer implements IPrimitivePaneRenderer {
       return null;
     }
   }
+
+  // hitTest(x: number, y: number): PrimitiveHoveredItem | null {
+  //   if (this._points.length < 2) {
+  //     return;
+  //   }
+  //   const vertex1: Point2D = new Point2D(this._points[0].x, this._points[0].y);
+
+  //   const currPoint = new Point2D(x, y);
+  //   const segment: Segment = new Segment(vertex1, vertex2);
+
+  //   const tolerance: number = 3e-0;
+  //   const hit = segment.distanceTo(currPoint)[0] < tolerance ? true : false;
+
+  //   if (!hit) {
+  //     return null;
+  //   }
+
+  //   return {
+  //     cursorStyle: "grab",
+  //     externalId: 'time-line-drawing',
+  //     zOrder: 'top',
+  //   };
+  // }
 }
 
 class TimeLinePaneView implements IPrimitivePaneView {
