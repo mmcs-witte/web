@@ -18,7 +18,6 @@ import {
 } from 'lightweight-charts';
 
 import { DrawingBase, DrawingToolBase, RectangleAxisPaneRenderer, type Point, type ViewPoint } from './drawing-base.ts';
-import { CollisionHelper } from './collision-helper.ts';
 import { Point as Point2D } from '@flatten-js/core';
 import { Segment } from '@flatten-js/core';
 
@@ -27,7 +26,10 @@ class FibChannelPaneRenderer implements IPrimitivePaneRenderer {
 	_options: FibChannelOptions;
 
 	constructor(points: ViewPoint[], options: FibChannelOptions) {
-		this._points = points;
+		this._points = new Array<ViewPoint>(points.length);
+		for (let i = 0; i < points.length; i++) {
+			this._points[i] = points[i];
+		}
 		this._options = options;
 	}
 	draw(target: CanvasRenderingTarget2D) {
@@ -45,11 +47,12 @@ class FibChannelPaneRenderer implements IPrimitivePaneRenderer {
 				};
 			};
 
-			const drawingPoint1: ViewPoint = calculateDrawingPoint(this._points[0]);
-			const drawingPoint2: ViewPoint = calculateDrawingPoint(this._points[1]);
+			for (let i = 0; i < this._points.length; i++) {
+				this._points[i] = calculateDrawingPoint(this._points[i]);
+			}
 
-			const high = Math.min(drawingPoint1.y, drawingPoint2.y);
-			const low = Math.max(drawingPoint1.y, drawingPoint2.y);
+			const high = Math.min(this._points[0].y, this._points[1].y);
+			const low = Math.max(this._points[0].y, this._points[1].y);
 			const height = low - high;
 
 			ctx.font = '36px Arial';
@@ -72,10 +75,10 @@ class FibChannelPaneRenderer implements IPrimitivePaneRenderer {
 					const nextY = low - height * nextLevel;
 
 					ctx.beginPath();
-					ctx.moveTo(drawingPoint1.x, currY);
-					ctx.lineTo(drawingPoint2.x, currY);
-					ctx.lineTo(drawingPoint2.x, nextY);
-					ctx.lineTo(drawingPoint1.x, nextY);
+					ctx.moveTo(this._points[0].x, currY);
+					ctx.lineTo(this._points[1].x, currY);
+					ctx.lineTo(this._points[1].x, nextY);
+					ctx.lineTo(this._points[0].x, nextY);
 					ctx.fill();
 				}
 			}
@@ -90,10 +93,10 @@ class FibChannelPaneRenderer implements IPrimitivePaneRenderer {
 				const level = fibonacciLevels[i];
 				const y = low - height * level;
 				ctx.beginPath();
-				ctx.moveTo(drawingPoint1.x, y);
-				ctx.lineTo(drawingPoint2.x, y);
+				ctx.moveTo(this._points[0].x, y);
+				ctx.lineTo(this._points[1].x, y);
 				ctx.stroke();
-				ctx.fillText(`${(level * 100).toFixed(1)}%`, (drawingPoint2.x + 4), (y - 2));
+				ctx.fillText(`${(level * 100).toFixed(1)}%`, (this._points[1].x + 4), (y - 2));
 			}
 		});
 	}

@@ -17,9 +17,10 @@ import {
 	isBusinessDay
 } from 'lightweight-charts';
 
-import { Point as Point2D, Vector as Vector2D } from '@flatten-js/core';
+import { Point as Point2D, Segment, Vector as Vector2D } from '@flatten-js/core';
 import { DrawingBase, DrawingToolBase, RectangleAxisPaneRenderer, type Point, type ViewPoint } from './drawing-base.ts';
 import { MathHelper } from './math-helper.ts';
+import { CollisionHelper } from './collision-helper.ts';
 
 export interface FibSpiralRenderInfo {
 	rotationCenter: ViewPoint;
@@ -102,8 +103,57 @@ class FibSpiralPaneRenderer implements IPrimitivePaneRenderer {
 		});
 	}
 
+	// TODO: fix this. It doesn't hit test arcs correctly
 	hitTest(x: number, y: number): PrimitiveHoveredItem | null {
-		return null;
+		if (this._fibSpiralRendeInfo.numArcs == 0) {
+			return;
+		}
+
+		const tolerance: number = 3e-0;
+		const hitTestPoint: Point2D = new Point2D(x, y);
+
+		const rotationCenter: Vector2D = new Vector2D(this._fibSpiralRendeInfo.rotationCenter.x, this._fibSpiralRendeInfo.rotationCenter.y);
+
+		// Rotate current point around fibSpiralDrawInfo.rotationCenter to -rotationAngle
+		let  hitTestPointLocal: Vector2D = new Vector2D(hitTestPoint.x, hitTestPoint.y).subtract(rotationCenter);
+		hitTestPointLocal = MathHelper.RotateVector(hitTestPointLocal, -this._fibSpiralRendeInfo.spiralRotationAngle);
+		const hitTestPointRotated: Vector2D = rotationCenter.add(hitTestPointLocal);
+
+		const ray: Segment = new Segment(new Point2D(this._fibSpiralRendeInfo.rayStart.x, this._fibSpiralRendeInfo.rayStart.y), new Point2D(this._fibSpiralRendeInfo.rayEnd.x, this._fibSpiralRendeInfo.rayEnd.y));
+
+		let hit: boolean = false;
+		const distToRay: number = ray.distanceTo(new Point2D(hitTestPointRotated.x, hitTestPointRotated.y))[0];
+		if (distToRay < tolerance) {
+			hit = true;
+		}
+
+		// Get distances to all the arcs
+		for (let i = 0; i < this._fibSpiralRendeInfo.numArcs && !hit; i++) {
+			const startAngle: number = this._fibSpiralRendeInfo.arcAngles[i][0];
+			const sweepAngle: number = this._fibSpiralRendeInfo.arcAngles[i][1];
+
+			const arcCenterLocal: Vector2D = new Vector2D(this._fibSpiralRendeInfo.arcCenters[i].x, this._fibSpiralRendeInfo.arcCenters[i].y);
+			const arcCenterVec = rotationCenter.add(arcCenterLocal)
+			const arcCenter = new Point2D(arcCenterVec.x, arcCenterVec.y);
+
+			hit = CollisionHelper.HitTestArc(
+				new Point2D(hitTestPointRotated.x, hitTestPointRotated.y),
+				arcCenter,
+				this._fibSpiralRendeInfo.arcRadiuses[i],
+				startAngle,
+				sweepAngle,
+				tolerance);
+		}
+
+		if (hit) {
+			return {
+				cursorStyle: "grab",
+				externalId: 'fib-spiral-drawing',
+				zOrder: 'top',
+			};
+		} else {
+			return null;
+		}
 	}
 }
 
