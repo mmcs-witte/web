@@ -16,12 +16,10 @@ import type {
 	Time,
 	PrimitiveHoveredItem,
 } from 'lightweight-charts';
-import { positionsBox } from '../../helpers/dimensions/positions.ts';
-import { point, Point as Point2D } from '@flatten-js/core';
+import { Point as Point2D } from '@flatten-js/core';
 import { Vector as Vector2D } from '@flatten-js/core';
 import { Segment } from '@flatten-js/core';
-import { DrawingToolBase, DrawingBase } from './drawing-base.ts';
-import type { DrawingBounds, Point, ViewPoint } from './drawing-base.ts';
+import { DrawingToolBase, DrawingBase, RectangleAxisPaneRenderer, type Point } from './drawing-base.ts';
 
 export interface ClassicArrowRenderInfo {
 	arrowWing1: Point2D;

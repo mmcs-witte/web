@@ -54,10 +54,6 @@ class FibChannelPaneRenderer implements IPrimitivePaneRenderer {
 
 			const dir: Vector2D = new Vector2D(0, this._points[1].y - this._points[0].y);
 
-			const high = Math.min(this._points[0].y, this._points[1].y);
-			const low = Math.max(this._points[0].y, this._points[1].y);
-			const height = low - high;
-
 			ctx.font = '36px Arial';
 
 			const fibonacciLevels = this._options.fibonacciLevels;

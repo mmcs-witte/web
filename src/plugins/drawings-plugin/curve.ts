@@ -26,7 +26,7 @@ import { MathHelper, type BezierCurvesPointsInfo } from './math-helper.ts';
 import { CollisionHelper } from './collision-helper.ts';
 
 
-export function fillBezierPath(renderingScope: BitmapCoordinatesRenderingScope, bezierCurveInfo: BezierCurvesPointsInfo, fillColor: string) {
+export function fillBezierPath(renderingScope: BitmapCoordinatesRenderingScope, bezierCurveInfo: BezierCurvesPointsInfo, fillColor: string, lineColor: string) {
 	const ctx = renderingScope.context;
 
 	const bezierSplines: Point2D[] = Array<Point2D>(bezierCurveInfo.endPoints.length + bezierCurveInfo.controlPoints1.length + bezierCurveInfo.controlPoints2.length);
@@ -56,27 +56,30 @@ export function fillBezierPath(renderingScope: BitmapCoordinatesRenderingScope, 
 	ctx.beginPath();
 	ctx.fillStyle = fillColor;
 
+	ctx.moveTo(bezierSplines[0].x, bezierSplines[0].y);
 	for (let i = 0; i + 3 < bezierSplines.length; i += 3) {
-		ctx.moveTo(bezierSplines[i].x, bezierSplines[i].y);
 		ctx.bezierCurveTo(bezierSplines[i + 1].x, bezierSplines[i + 1].y,
 			bezierSplines[i + 2].x, bezierSplines[i + 2].y,
 			bezierSplines[i + 3].x, bezierSplines[i + 3].y);
 	}
-	ctx.lineTo(bezierSplines[0].x, bezierSplines[0].y);
 	ctx.closePath();
 	ctx.fill();
+
+	ctx.strokeStyle = lineColor;
+	ctx.lineWidth = 4;
+	ctx.stroke();
 }
 
 class CurvePaneRenderer implements IPrimitivePaneRenderer {
 	_points: ViewPoint[];
-	_fillColor: string;
+	_options: CurveOptions;
 
-	constructor(points: ViewPoint[], fillColor: string) {
+	constructor(points: ViewPoint[], options: CurveOptions) {
 		this._points = new Array<ViewPoint>(points.length);
 		for (let i = 0; i < points.length; i++) {
 			this._points[i] = points[i];
 		}
-		this._fillColor = fillColor;
+		this._options = options;
 	}
 
 	draw(target: CanvasRenderingTarget2D) {
@@ -101,7 +104,7 @@ class CurvePaneRenderer implements IPrimitivePaneRenderer {
 				ctx.beginPath();
 				ctx.moveTo(this._points[0].x, this._points[0].y);
 				ctx.lineTo(this._points[1].x, this._points[1].y);
-				ctx.strokeStyle = this._fillColor;
+				ctx.strokeStyle = this._options.lineColor;
 				ctx.lineWidth = scope.verticalPixelRatio;
 				ctx.stroke();
 			}
@@ -111,7 +114,7 @@ class CurvePaneRenderer implements IPrimitivePaneRenderer {
 					new Point2D(this._points[2].x, this._points[2].y),
 					new Point2D(this._points[1].x, this._points[1].y),
 				);
-				fillBezierPath(scope, bezierCurveInfo, this._fillColor);
+				fillBezierPath(scope, bezierCurveInfo, this._options.fillColor, this._options.lineColor);
 			}
 		});
 	}
@@ -173,7 +176,7 @@ class CurvePaneView implements IPrimitivePaneView {
 	renderer() {
 		return new CurvePaneRenderer(
 			this._drawingPoints,
-			this._source._options.fillColor
+			this._source._options,
 		);
 	}
 }
@@ -281,7 +284,8 @@ class CurvePriceAxisView extends CurveAxisView {
 	}
 }
 
-export interface CurveDrawingToolOptions {
+export interface CurveOptions {
+	lineColor: string;
 	fillColor: string;
 	previewFillColor: string;
 	labelColor: string;
@@ -291,7 +295,8 @@ export interface CurveDrawingToolOptions {
 	timeLabelFormatter: (time: Time) => string;
 }
 
-const defaultOptions: CurveDrawingToolOptions = {
+const defaultOptions: CurveOptions = {
+	lineColor: 'rgba(234, 19, 19, 0.59)',
 	fillColor: 'rgba(19, 148, 234, 0.59)',
 	previewFillColor: 'rgba(19, 148, 234, 0.36)',
 	labelColor: 'rgba(19, 148, 234, 0.59)',
@@ -307,7 +312,7 @@ const defaultOptions: CurveDrawingToolOptions = {
 	},
 };
 
-class Curve extends DrawingBase<CurveDrawingToolOptions> {
+class Curve extends DrawingBase<CurveOptions> {
 	_paneViews: CurvePaneView[];
 	_timeAxisViews: CurveTimeAxisView[] = [];
 	_priceAxisViews: CurvePriceAxisView[] = [];
@@ -316,10 +321,10 @@ class Curve extends DrawingBase<CurveDrawingToolOptions> {
 
 	constructor(
 		points: Point[],
-		options: Partial<CurveDrawingToolOptions> = {}
+		options: Partial<CurveOptions> = {}
 	) {
 		super(points, defaultOptions, options);
-		
+
 		this._paneViews = [new CurvePaneView(this)];
 		points.forEach(point => {
 			this._timeAxisViews.push(new CurveTimeAxisView(this, point));
@@ -335,7 +340,7 @@ class Curve extends DrawingBase<CurveDrawingToolOptions> {
 		this._timeAxisViews.push(new CurveTimeAxisView(this, p));
 		this._priceAxisViews.push(new CurvePriceAxisView(this, p));
 		this.requestUpdate();
-	  }
+	}
 
 	public override updatePoint(p: Point, index: number) {
 		if (index >= this._points.length || index < 0)
@@ -358,11 +363,11 @@ class Curve extends DrawingBase<CurveDrawingToolOptions> {
 	}
 
 	priceAxisViews() {
-	  return this._priceAxisViews;
+		return this._priceAxisViews;
 	}
 
 	timeAxisViews() {
-	  return this._timeAxisViews;
+		return this._timeAxisViews;
 	}
 
 	paneViews() {
@@ -377,7 +382,7 @@ class Curve extends DrawingBase<CurveDrawingToolOptions> {
 		return this._timeAxisPaneViews;
 	}
 
-	applyOptions(options: Partial<CurveDrawingToolOptions>) {
+	applyOptions(options: Partial<CurveOptions>) {
 		this._options = { ...this._options, ...options };
 		this.requestUpdate();
 	}
@@ -393,7 +398,7 @@ class Curve extends DrawingBase<CurveDrawingToolOptions> {
 class PreviewCurve extends Curve {
 	constructor(
 		points: Point[],
-		options: Partial<CurveDrawingToolOptions> = {}
+		options: Partial<CurveOptions> = {}
 	) {
 		super(points, options);
 		this._options.fillColor = this._options.previewFillColor;
@@ -401,13 +406,13 @@ class PreviewCurve extends Curve {
 }
 
 export class CurveDrawingTool extends DrawingToolBase<
-	DrawingBase<CurveDrawingToolOptions>,
-	DrawingBase<CurveDrawingToolOptions>,
-	CurveDrawingToolOptions> {
+	DrawingBase<CurveOptions>,
+	DrawingBase<CurveOptions>,
+	CurveOptions> {
 	constructor(
 		chart: IChartApi,
 		series: ISeriesApi<SeriesType>,
-		options: Partial<CurveDrawingToolOptions>
+		options: Partial<CurveOptions>
 	) {
 		super(Curve, PreviewCurve, chart, series, defaultOptions, options);
 	}
