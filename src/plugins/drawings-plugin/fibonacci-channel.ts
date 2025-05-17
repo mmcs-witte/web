@@ -18,8 +18,9 @@ import {
 } from 'lightweight-charts';
 
 import { DrawingBase, DrawingToolBase, RectangleAxisPaneRenderer, type Point, type ViewPoint } from './drawing-base.ts';
-import { Point as Point2D } from '@flatten-js/core';
+import { Point as Point2D, Vector } from '@flatten-js/core';
 import { Segment } from '@flatten-js/core';
+import { Vector as Vector2D } from '@flatten-js/core';
 
 class FibChannelPaneRenderer implements IPrimitivePaneRenderer {
 	_points: ViewPoint[];
@@ -51,6 +52,8 @@ class FibChannelPaneRenderer implements IPrimitivePaneRenderer {
 				this._points[i] = calculateDrawingPoint(this._points[i]);
 			}
 
+			const dir: Vector2D = new Vector2D(0, this._points[1].y - this._points[0].y);
+
 			const high = Math.min(this._points[0].y, this._points[1].y);
 			const low = Math.max(this._points[0].y, this._points[1].y);
 			const height = low - high;
@@ -71,8 +74,8 @@ class FibChannelPaneRenderer implements IPrimitivePaneRenderer {
 				const nextLevel: number = fibonacciLevels[nextIndex];
 				if (currIndex != nextIndex) {
 					ctx.fillStyle = fibonacciLineColors[nextIndex % fibonacciLineColors.length];
-					const currY = low - height * curLevel;
-					const nextY = low - height * nextLevel;
+					const currY = new Vector2D(0, this._points[0].y).add(dir.scale(0, curLevel)).y;
+					const nextY = new Vector2D(0, this._points[0].y).add(dir.scale(0, nextLevel)).y;
 
 					ctx.beginPath();
 					ctx.moveTo(this._points[0].x, currY);
@@ -91,7 +94,7 @@ class FibChannelPaneRenderer implements IPrimitivePaneRenderer {
 				ctx.lineWidth = 5;
 
 				const level = fibonacciLevels[i];
-				const y = low - height * level;
+				const y = new Vector2D(0, this._points[0].y).add(dir.scale(0, level)).y;
 				ctx.beginPath();
 				ctx.moveTo(this._points[0].x, y);
 				ctx.lineTo(this._points[1].x, y);
