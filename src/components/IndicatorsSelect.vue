@@ -19,8 +19,8 @@ type indicatorItem = {
 }
 
 const indicatorsList: indicatorItem[] = [
-  { id: 1, name: 'SMA', type: IndicatorType.Sma, unavailable: false },
-  { id: 2, name: 'BOLLINGER-BANDS', type: IndicatorType.BollingerBands, unavailable: false },
+  { id: 1, name: 'Simple Moving Average', type: IndicatorType.Sma, unavailable: false },
+  { id: 2, name: 'Bollinger Bands', type: IndicatorType.BollingerBands, unavailable: false },
 ]
 
 const selectedIndicator = ref(null)

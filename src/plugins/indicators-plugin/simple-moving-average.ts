@@ -147,7 +147,7 @@ export class SMAIndicator extends ChartInstrumentBase implements ISeriesPrimitiv
 	}
 
 	calculateSMA() {
-		const smaData: SMAData[] = new Array(this._seriesData.length);
+		const smaData: SMAData[] = new Array(this._seriesData.length - this._depth);
     const seriesDataPriceCache: number[] = new Array(this._seriesData.length);
     let index = 0;
 
@@ -157,27 +157,22 @@ export class SMAIndicator extends ChartInstrumentBase implements ISeriesPrimitiv
 
       seriesDataPriceCache[index] = price;
 
-      if (index < this._depth) {
-        smaData[index] = {
-          average: price,
-          time: d.time,
-        };
-      } else {
+      if (index >= this._depth) {
         let avgPrice: number = 0;
         for (let i = index - 1; i > index - this._depth; i--) {
           avgPrice += seriesDataPriceCache[i];
         }
         avgPrice /= this._depth == 0 ? 1.0 : this._depth;
 
-        smaData[index] = {
+        smaData[index - this._depth] = {
           average: avgPrice,
           time: d.time,
         };
       }
+      index += 1;
 
-			index += 1;
 		});
-		smaData.length = index;
+		smaData.length = Math.max(0, index - this._depth);
 		this._smaData = smaData;
   }
 }
