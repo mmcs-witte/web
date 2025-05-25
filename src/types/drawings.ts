@@ -5,6 +5,7 @@ export enum DrawingType {
   Line = "LINE",
   AnchoredText = "ANCHORED_TEXT",
   FibonacciChannel = "FIBONACCI_CHANNEL",
+  FibonacciWedge = "FIBONACCI_WEDGE",
   FibonacciSpiral = "FIBONACCI_SPIRAL",
   Curve = "CURVE",
   TrendLine = "TREND_LINE",

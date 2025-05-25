@@ -96,16 +96,16 @@ class PolylinePaneRenderer implements IPrimitivePaneRenderer {
 			ctx.stroke();
 
 			// drawing arrow
-			const n = this._points.length;
-			const p0: Point2D = new Point2D(this._points[n - 2].x, this._points[n - 2].y);
-			const p1: Point2D = new Point2D(this._points[n - 1].x, this._points[n - 1].y);
-			const arrowRenderInfo = CalculateClassicArrowRenderInfo(p0, p1);
+			// const n = this._points.length;
+			// const p0: Point2D = new Point2D(this._points[n - 2].x, this._points[n - 2].y);
+			// const p1: Point2D = new Point2D(this._points[n - 1].x, this._points[n - 1].y);
+			// const arrowRenderInfo = CalculateClassicArrowRenderInfo(p0, p1);
 
-			ctx.beginPath();
-			ctx.moveTo(arrowRenderInfo.arrowWing2.x, arrowRenderInfo.arrowWing2.y);
-			ctx.lineTo(arrowRenderInfo.arrowBase.x, arrowRenderInfo.arrowBase.y);
-			ctx.lineTo(arrowRenderInfo.arrowWing1.x, arrowRenderInfo.arrowWing1.y);
-			ctx.stroke();
+			// ctx.beginPath();
+			// ctx.moveTo(arrowRenderInfo.arrowWing2.x, arrowRenderInfo.arrowWing2.y);
+			// ctx.lineTo(arrowRenderInfo.arrowBase.x, arrowRenderInfo.arrowBase.y);
+			// ctx.lineTo(arrowRenderInfo.arrowWing1.x, arrowRenderInfo.arrowWing1.y);
+			// ctx.stroke();
 		});
 	}
 

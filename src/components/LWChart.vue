@@ -123,15 +123,15 @@ const indicatorsStore = useIndicatorsStore()
 
 const createDrawingTools = (chart, series) => {
   let drawingTools = {
-    "rectangle": new RectangleDrawingTool(chart, series),
+    "trend_line": new TrendLineDrawingTool(chart, series),
+    "time_line": new TimeLineDrawingTool(chart, series), 
     "triangle": new TriangleDrawingTool(chart, series),
+    "rectangle": new RectangleDrawingTool(chart, series),
     "fibonacci_channel": new FibChannelDrawingTool(chart, series),
     "fibonacci_spiral": new FibSpiralDrawingTool(chart, series),
+    "fibonacci_wedge": new FibWedgeDrawingTool(chart, series),
     "curve": new CurveDrawingTool(chart, series),
-    "trend_line": new TrendLineDrawingTool(chart, series),
     "polyline": new PolylineDrawingTool(chart, series),
-    //"time_line": new TimeLineDrawingTool(chart, series), 
-    "time_line": new PolylineDrawingTool(chart, series), 
   }
   
   for (let tool in drawingTools) {

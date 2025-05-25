@@ -7,8 +7,16 @@ import {
   faPalette,
   faCat,
   faRuler,
-  faArrowPointer
+  faArrowPointer,
+  faTerminal,
+  faMobileButton,
+  faHouseMedicalFlag,
+  faBasketShopping,
+  faBurn,
+  faPerson,
+  faMale,
 } from '@fortawesome/free-solid-svg-icons'
+
 import {
   faUser as farUser,
   faClock as farClock
@@ -30,7 +38,14 @@ library.add(
   farUser,
   farClock,
   fabGithub,
-  fabTwitter
+  fabTwitter,
+  faTerminal,
+  faMobileButton,
+  faHouseMedicalFlag,
+  faBasketShopping,
+  faBurn,
+  faPerson,
+  faMale,
 )
 
 export { FontAwesomeIcon }
