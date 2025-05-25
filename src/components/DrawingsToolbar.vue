@@ -68,7 +68,7 @@ const selectDrawing = (drawingType: DrawingType) => {
     </button>
   </nav>
   <div class="text-sm text-gray-200">
-    <span class="p-2">v0.2.0</span>
+    <span class="p-2">v1.2.0</span>
   </div>
 </aside>
 </template>
