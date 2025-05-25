@@ -18,7 +18,7 @@ import {
 } from 'lightweight-charts';
 
 import { DrawingBase, DrawingToolBase, RectangleAxisPaneRenderer, type Point, type ViewPoint } from './drawing-base.ts';
-import { Point as Point2D, Vector } from '@flatten-js/core';
+import { Point as Point2D } from '@flatten-js/core';
 import { Segment } from '@flatten-js/core';
 import { Vector as Vector2D } from '@flatten-js/core';
 

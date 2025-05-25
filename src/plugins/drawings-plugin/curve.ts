@@ -15,12 +15,8 @@ import type {
 	Time,
 	PrimitiveHoveredItem,
 } from 'lightweight-charts';
-import { ensureDefined } from '../../helpers/assertions.ts';
-import { ChartInstrumentBase } from '../chart-instrument-base.ts';
-import { positionsBox } from '../../helpers/dimensions/positions.ts';
 import { Point as Point2D } from '@flatten-js/core';
 import { Vector as Vector2D } from '@flatten-js/core';
-import { Segment } from '@flatten-js/core';
 import { DrawingBase, DrawingToolBase, RectangleAxisPaneRenderer, type Point, type ViewPoint } from './drawing-base.ts';
 import { MathHelper, type BezierCurvesPointsInfo } from './math-helper.ts';
 import { CollisionHelper } from './collision-helper.ts';

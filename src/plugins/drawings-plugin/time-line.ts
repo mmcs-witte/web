@@ -1,4 +1,4 @@
-import type { CanvasRenderingTarget2D, BitmapCoordinatesRenderingScope } from 'fancy-canvas';
+import type { CanvasRenderingTarget2D } from 'fancy-canvas';
 import {
   isBusinessDay
 } from 'lightweight-charts';

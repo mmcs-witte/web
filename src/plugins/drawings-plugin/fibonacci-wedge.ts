@@ -22,7 +22,6 @@ import { DrawingBase, DrawingToolBase, RectangleAxisPaneRenderer, type Point, ty
 import { MathHelper } from './math-helper.ts';
 import { CollisionHelper } from './collision-helper.ts';
 
-
 export interface AnnulusSectorRenderInfo {
 	annulusCenter: Point2D;
 	radiusSmall: number;

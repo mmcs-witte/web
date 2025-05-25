@@ -20,7 +20,6 @@ import { RectangleDrawingTool } from '../plugins/drawings-plugin/rectangle.ts';
 import { TriangleDrawingTool } from '../plugins/drawings-plugin/triangle.ts';
 import { FibChannelDrawingTool } from '../plugins/drawings-plugin/fibonacci-channel.ts';
 
-import { VolumeProfile } from '../plugins/drawings-plugin/volume-profile/volume-profile.ts';
 import { useDrawingsStore } from '../stores/drawings.ts';
 import { DrawingType } from '../types/drawings.ts';
 import { BandsIndicator } from '../plugins/indicators-plugin/bollinger-bands.ts'
@@ -136,38 +135,6 @@ drawingStore.$subscribe((mutation, store) => {
   drawingStore.currentDrawing = DrawingType.Arrow
 })
 
-const createVolumeProfile = (chart, series, data) => {
-  const basePrice = data[data.length - 50].value;
-  const priceStep = Math.round(basePrice * 0.1);
-  const profile = [];
-  for (let i = 0; i < 15; i++) {
-  	profile.push({
-  		price: basePrice + i * priceStep,
-  		vol: Math.round(Math.random() * 20),
-  	});
-  }
-  const vpData = {
-  	time: data[data.length - 150].time,
-  	profile,
-  	width: 100, // number of bars width
-  };
-  const vp = new VolumeProfile(chart, series, vpData);
-  series.attachPrimitive(vp);
-};
-
-const createAnchoredText = (chart, series) => {
-  const anchoredText = new AnchoredText({
-       vertAlign: 'middle',
-       horzAlign: 'middle',
-       text: 'Witte',
-       lineHeight: 54,
-       font: 'bold 54px Arial',
-       color: 'white',
-     });
-  series.attachPrimitive(anchoredText); 
-};
-
-
 // Creates the chart series and sets the data.
 const addSeriesAndData = props => {
 	const seriesDefinition = getChartSeriesDefinition(props.type);
@@ -175,8 +142,6 @@ const addSeriesAndData = props => {
 	series.setData(props.data);
 
   drawingTools = createDrawingTools(chart, series)
-  // const smaIndicator = new SMAIndicator();
-  // series.attachPrimitive(smaIndicator);
 };
 
 onMounted(() => {
