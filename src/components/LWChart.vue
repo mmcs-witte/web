@@ -14,7 +14,6 @@ import {
 	HistogramSeries,
 	BaselineSeries,
 } from 'lightweight-charts';
-import { AnchoredText } from "../plugins/drawings-plugin/anchored-text.ts";
 import { TrendLineDrawingTool } from '../plugins/drawings-plugin/trend-line.ts';
 import { RectangleDrawingTool } from '../plugins/drawings-plugin/rectangle.ts';
 import { TriangleDrawingTool } from '../plugins/drawings-plugin/triangle.ts';
@@ -22,11 +21,12 @@ import { FibChannelDrawingTool } from '../plugins/drawings-plugin/fibonacci-chan
 
 import { useDrawingsStore } from '../stores/drawings.ts';
 import { DrawingType } from '../types/drawings.ts';
-import { BandsIndicator } from '../plugins/indicators-plugin/bollinger-bands.ts'
-import { SMAIndicator } from '../plugins/indicators-plugin/simple-moving-average.ts'
+import { SMAIndicator } from '../plugins/indicators-plugin/simple-moving-average.ts';
+import { BandsIndicator } from '../plugins/indicators-plugin/bollinger-bands.ts';
 import { FibSpiralDrawingTool } from '../plugins/drawings-plugin/fibonacci-spiral.ts';
 import { CurveDrawingTool } from '../plugins/drawings-plugin/curve.ts';
 import { TimeLineDrawingTool } from '../plugins/drawings-plugin/time-line.ts';
+import { useIndicatorsStore } from '../stores/indicators.ts';
 import { FibWedgeDrawingTool } from '../plugins/drawings-plugin/fibonacci-wedge.ts';
 import { PolylineDrawingTool } from '../plugins/drawings-plugin/polyline.ts';
 
@@ -75,6 +75,16 @@ function getChartSeriesDefinition(type) {
 	return LineSeries;
 }
 
+
+function getChartIndicatorsDefinition(type) {
+	switch (type.toLowerCase()) {
+		case 'sma':
+			return new SMAIndicator();
+    case 'bollinger-bands':
+      return new BandsIndicator();
+	}
+}
+
 function getDrawingTool(type) {
   return drawingTools[type.toLowerCase()]
 }
@@ -84,6 +94,10 @@ function getDrawingTool(type) {
 let series;
 let chart;
 let drawingTools;
+let selectedDrawingTool = ref(DrawingType.Arrow)
+
+let indicatorsList;
+
 const chartContainer = ref();
 
 const fitContent = () => {
@@ -105,6 +119,7 @@ const resizeHandler = () => {
 };
 
 const drawingStore = useDrawingsStore()
+const indicatorsStore = useIndicatorsStore()
 
 const createDrawingTools = (chart, series) => {
   let drawingTools = {
@@ -126,14 +141,33 @@ const createDrawingTools = (chart, series) => {
   return drawingTools
 }
 
-let selectedDrawingTool = ref(DrawingType.Arrow)
-
 drawingStore.$subscribe((mutation, store) => {
   if (store.currentDrawing === DrawingType.Arrow) return
   selectedDrawingTool.value = getDrawingTool(store.currentDrawing)
   selectedDrawingTool.value.startDrawing()
   drawingStore.currentDrawing = DrawingType.Arrow
 })
+
+indicatorsStore.$subscribe((mutation, store) => {
+  console.log(store.addedIndicator)
+  if (store.addedIndicator === null) return
+
+  if (indicatorsList.includes(store.addedIndicator)) {
+    store.addedIndicator = null
+    return
+  }
+
+  addIndicator(store.addedIndicator)
+
+  indicatorsList.push(store.addedIndicator)
+  store.addedIndicator = null
+})
+
+const addIndicator = (indicatorType) => {
+  const indicator = getChartIndicatorsDefinition(indicatorType);
+  series.attachPrimitive(indicator);
+  chart.timeScale().fitContent(); 
+}
 
 // Creates the chart series and sets the data.
 const addSeriesAndData = props => {
@@ -168,6 +202,8 @@ onMounted(() => {
 	if (props.autosize) {
 		window.addEventListener('resize', resizeHandler);
 	}
+
+  indicatorsList = []
 });
 
 onUnmounted(() => {
