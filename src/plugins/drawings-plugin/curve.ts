@@ -210,8 +210,8 @@ abstract class CurveAxisPaneView implements IPrimitivePaneView {
 class CurvePriceAxisPaneView extends CurveAxisPaneView {
 	getPoints(): [Coordinate | null, Coordinate | null] {
 		const series = this._source.series;
-		const y1 = series.priceToCoordinate(this._source._bounds._minPrice);
-		const y2 = series.priceToCoordinate(this._source._bounds._maxPrice);
+		const y1 = series.priceToCoordinate(this._source._bounds._minPrice ?? 0);
+		const y2 = series.priceToCoordinate(this._source._bounds._maxPrice ?? 0);
 		return [y1, y2];
 	}
 }
@@ -219,8 +219,8 @@ class CurvePriceAxisPaneView extends CurveAxisPaneView {
 class CurveTimeAxisPaneView extends CurveAxisPaneView {
 	getPoints(): [Coordinate | null, Coordinate | null] {
 		const timeScale = this._source.chart.timeScale();
-		const x1 = timeScale.timeToCoordinate(this._source._bounds._minTime);
-		const x2 = timeScale.timeToCoordinate(this._source._bounds._maxTime);
+		const x1 = timeScale.timeToCoordinate(this._source._bounds._minTime as Time);
+		const x2 = timeScale.timeToCoordinate(this._source._bounds._maxTime as Time);
 		return [x1, x2];
 	}
 }

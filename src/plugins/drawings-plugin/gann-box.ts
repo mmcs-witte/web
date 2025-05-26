@@ -271,7 +271,7 @@ class GannBoxPaneRenderer implements IPrimitivePaneRenderer {
 		return null;
 		
 		if (this._points.length < 3) {
-			return;
+			return null;
 		}
 		const vertex1: Vector2D = new Vector2D(this._points[0].x, this._points[0].y);
 		const vertex2: Vector2D = new Vector2D(this._points[1].x, this._points[1].y);

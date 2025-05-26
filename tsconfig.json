@@ -3,13 +3,13 @@
   "references": [
     { "path": "./tsconfig.app.json" },
     { "path": "./tsconfig.node.json" },
-    { "path": "./vendor/lw-charts/tsconfig.json" }
+    //{ "path": "./vendor/lw-charts/tsconfig.json" }
   ],
   "compilerOptions": {
     "baseUrl": "./",
     "paths": {
       "@/*": ["src/*"],
-      "lightweight-charts": ["./vendor/lw-charts/src"],
+      //"lightweight-charts": ["./vendor/lw-charts/src"],
     }
   },
 }

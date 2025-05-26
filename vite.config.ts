@@ -12,7 +12,7 @@ export default defineConfig({
   resolve: {
     alias: {
       '@': path.resolve(__dirname, 'src'),
-      'lightweight-charts': path.resolve(__dirname, 'vendor/lw-charts/src'),
+      //'lightweight-charts': path.resolve(__dirname, 'vendor/lw-charts/src'),
     }
   }
 })

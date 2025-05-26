@@ -74,7 +74,7 @@ class FibSpiralPaneRenderer implements IPrimitivePaneRenderer {
 
 			const ctx = scope.context;
 			ctx.save();
-			ctx.translate(rotationCenter.x, rotationCenter.y);
+			ctx.translate(rotationCenter.x as number, rotationCenter.y as number);
 			ctx.rotate(spiralRotationAngle);
 
 			ctx.beginPath();
@@ -106,20 +106,20 @@ class FibSpiralPaneRenderer implements IPrimitivePaneRenderer {
 	// TODO: fix this. It doesn't hit test arcs correctly
 	hitTest(x: number, y: number): PrimitiveHoveredItem | null {
 		if (this._fibSpiralRendeInfo.numArcs == 0) {
-			return;
+			return null;
 		}
 
 		const tolerance: number = 3e-0;
 		const hitTestPoint: Point2D = new Point2D(x, y);
 
-		const rotationCenter: Vector2D = new Vector2D(this._fibSpiralRendeInfo.rotationCenter.x, this._fibSpiralRendeInfo.rotationCenter.y);
+		const rotationCenter: Vector2D = new Vector2D(this._fibSpiralRendeInfo.rotationCenter.x as number, this._fibSpiralRendeInfo.rotationCenter.y as number);
 
 		// Rotate current point around fibSpiralDrawInfo.rotationCenter to -rotationAngle
 		let  hitTestPointLocal: Vector2D = new Vector2D(hitTestPoint.x, hitTestPoint.y).subtract(rotationCenter);
 		hitTestPointLocal = MathHelper.RotateVector(hitTestPointLocal, -this._fibSpiralRendeInfo.spiralRotationAngle);
 		const hitTestPointRotated: Vector2D = rotationCenter.add(hitTestPointLocal);
 
-		const ray: Segment = new Segment(new Point2D(this._fibSpiralRendeInfo.rayStart.x, this._fibSpiralRendeInfo.rayStart.y), new Point2D(this._fibSpiralRendeInfo.rayEnd.x, this._fibSpiralRendeInfo.rayEnd.y));
+		const ray: Segment = new Segment(new Point2D(this._fibSpiralRendeInfo.rayStart.x as number, this._fibSpiralRendeInfo.rayStart.y as number), new Point2D(this._fibSpiralRendeInfo.rayEnd.x as number, this._fibSpiralRendeInfo.rayEnd.y as number));
 
 		let hit: boolean = false;
 		const distToRay: number = ray.distanceTo(new Point2D(hitTestPointRotated.x, hitTestPointRotated.y))[0];
@@ -132,7 +132,7 @@ class FibSpiralPaneRenderer implements IPrimitivePaneRenderer {
 			const startAngle: number = this._fibSpiralRendeInfo.arcAngles[i][0];
 			const sweepAngle: number = this._fibSpiralRendeInfo.arcAngles[i][1];
 
-			const arcCenterLocal: Vector2D = new Vector2D(this._fibSpiralRendeInfo.arcCenters[i].x, this._fibSpiralRendeInfo.arcCenters[i].y);
+			const arcCenterLocal: Vector2D = new Vector2D(this._fibSpiralRendeInfo.arcCenters[i].x as number, this._fibSpiralRendeInfo.arcCenters[i].y as number);
 			const arcCenterVec = rotationCenter.add(arcCenterLocal)
 			const arcCenter = new Point2D(arcCenterVec.x, arcCenterVec.y);
 
@@ -169,21 +169,21 @@ class FibSpiralPaneView implements IPrimitivePaneView {
 	}
 
 	updateRenderInfo(drawingPoints: ViewPoint[]): FibSpiralRenderInfo {
-		let spiralRotationCenter = { x: 0, y: 0 };
+		let spiralRotationCenter: ViewPoint = { x: 0 as Coordinate, y: 0 as Coordinate };
 		let spiralRotationAngle: number = 0;
 		let numArcs: number = 0;
 		let arcCenters: ViewPoint[] = [];
 		let arcRadiuses: number[] = [];
 		let arcAngles: number[][] = [];
-		let rayStart = { x: 0, y: 0 };
-		let rayEnd = { x: 0, y: 0 };;
+		let rayStart : ViewPoint= { x: 0 as Coordinate, y: 0 as Coordinate};
+		let rayEnd : ViewPoint = { x: 0 as Coordinate, y: 0 as Coordinate };
 
 		const pointsAreValid = drawingPoints.length == 2 && drawingPoints[0].x != null && drawingPoints[1].x != null && drawingPoints[0].y != null && drawingPoints[1].y != null;
 		const pointAreEqual = pointsAreValid && drawingPoints[0].x == drawingPoints[1].x && drawingPoints[0].y == drawingPoints[1].y;
 
 		if (pointsAreValid && !pointAreEqual) {
-			const p1: Vector2D = new Vector2D(drawingPoints[0].x, drawingPoints[0].y);
-			const p2: Vector2D = new Vector2D(drawingPoints[1].x, drawingPoints[1].y);
+			const p1: Vector2D = new Vector2D(drawingPoints[0].x as number, drawingPoints[0].y as number);
+			const p2: Vector2D = new Vector2D(drawingPoints[1].x as number, drawingPoints[1].y as number);
 
 			let initDir = p2.subtract(p1);
 
@@ -207,17 +207,17 @@ class FibSpiralPaneView implements IPrimitivePaneView {
 			const clockwiseCoef: number = bCounterClockwise ? 1.0 : -1.0;
 			arcCenters = new Array<ViewPoint>(numArcs);
 
-			arcCenters[0] = { x: 0.0, y: clockwiseCoef * a };
-			arcCenters[1] = { x: -a, y: clockwiseCoef * a };
-			arcCenters[2] = { x: -a, y: clockwiseCoef * 0.0 };
-			arcCenters[3] = { x: a, y: clockwiseCoef * 0.0 };
-			arcCenters[4] = { x: a, y: clockwiseCoef * 3.0 * a };
-			arcCenters[5] = { x: -4.0 * a, y: clockwiseCoef * 3.0 * a };
-			arcCenters[6] = { x: -4.0 * a, y: clockwiseCoef * -5.0 * a };
-			arcCenters[7] = { x: 9.0 * a, y: clockwiseCoef * -5.0 * a };
-			arcCenters[8] = { x: 9.0 * a, y: clockwiseCoef * 16.0 * a };
-			arcCenters[9] = { x: -25.0 * a, y: clockwiseCoef * 16.0 * a };
-			arcCenters[10] = { x: -25.0 * a, y: clockwiseCoef * -39.0 * a };
+			arcCenters[0] = { x: 0.0 as Coordinate, y: clockwiseCoef * a as Coordinate };
+			arcCenters[1] = { x: -a as Coordinate, y: clockwiseCoef * a as Coordinate };
+			arcCenters[2] = { x: -a as Coordinate, y: clockwiseCoef * 0.0 as Coordinate };
+			arcCenters[3] = { x: a as Coordinate, y: clockwiseCoef * 0.0 as Coordinate };
+			arcCenters[4] = { x: a as Coordinate, y: clockwiseCoef * 3.0 * a as Coordinate };
+			arcCenters[5] = { x: -4.0 * a as Coordinate, y: clockwiseCoef * 3.0 * a as Coordinate };
+			arcCenters[6] = { x: -4.0 * a as Coordinate, y: clockwiseCoef * -5.0 * a as Coordinate };
+			arcCenters[7] = { x: 9.0 * a as Coordinate, y: clockwiseCoef * -5.0 * a as Coordinate };
+			arcCenters[8] = { x: 9.0 * a as Coordinate, y: clockwiseCoef * 16.0 * a as Coordinate };
+			arcCenters[9] = { x: -25.0 * a as Coordinate, y: clockwiseCoef * 16.0 * a as Coordinate };
+			arcCenters[10] = { x: -25.0 * a as Coordinate, y: clockwiseCoef * -39.0 * a as Coordinate };
 
 			arcRadiuses = new Array<number>(numArcs);
 			arcRadiuses[0] = a;
@@ -253,12 +253,12 @@ class FibSpiralPaneView implements IPrimitivePaneView {
 				arcAngles[10] = [270.0, -70.0];
 			}
 
-			spiralRotationCenter = { x: p1.x, y: p1.y };
+			spiralRotationCenter = { x: p1.x as Coordinate, y: p1.y  as Coordinate };
 
 			rayStart = spiralRotationCenter;
 
 			const bigNumber: number = 3000; // Hack: extending ray beyond the end of the screen
-			rayEnd = { x: directionPoint.x + bigNumber, y: directionPoint.y };
+			rayEnd = { x: directionPoint.x + bigNumber as Coordinate, y: directionPoint.y as Coordinate};
 		}
 
 		return {
@@ -327,8 +327,8 @@ abstract class FibChannelAxisPaneView implements IPrimitivePaneView {
 class FibSpiralPriceAxisPaneView extends FibChannelAxisPaneView {
 	getPoints(): [Coordinate | null, Coordinate | null] {
 		const series = this._source.series;
-		const y1 = series.priceToCoordinate(this._source._bounds._minPrice);
-		const y2 = series.priceToCoordinate(this._source._bounds._maxPrice);
+		const y1 = series.priceToCoordinate(this._source._bounds._minPrice as Coordinate);
+		const y2 = series.priceToCoordinate(this._source._bounds._maxPrice as Coordinate);
 		return [y1, y2];
 	}
 }
@@ -336,8 +336,8 @@ class FibSpiralPriceAxisPaneView extends FibChannelAxisPaneView {
 class FibSpiralTimeAxisPaneView extends FibChannelAxisPaneView {
 	getPoints(): [Coordinate | null, Coordinate | null] {
 		const timeScale = this._source.chart.timeScale();
-		const x1 = timeScale.timeToCoordinate(this._source._bounds._minTime);
-		const x2 = timeScale.timeToCoordinate(this._source._bounds._maxTime);
+		const x1 = timeScale.timeToCoordinate(this._source._bounds._minTime as Time);
+		const x2 = timeScale.timeToCoordinate(this._source._bounds._maxTime as Time);
 		return [x1, x2];
 	}
 }

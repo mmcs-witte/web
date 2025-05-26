@@ -174,7 +174,7 @@ class FibWedgePaneRenderer implements IPrimitivePaneRenderer {
 
 	hitTest(x: number, y: number): PrimitiveHoveredItem | null {
 		if (this._points.length < 3) {
-			return;
+			return null;
 		}
 
 		const tolerance: number = 3e-0;
