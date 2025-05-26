@@ -19,7 +19,7 @@ import type {
 import { Point as Point2D } from '@flatten-js/core';
 import { Vector as Vector2D } from '@flatten-js/core';
 import { Segment } from '@flatten-js/core';
-import { DrawingToolBase, DrawingBase, RectangleAxisPaneRenderer, type Point } from './drawing-base.ts';
+import { DrawingToolBase, DrawingBase, RectangleAxisPaneRenderer, type Point, type ViewPoint } from './drawing-base.ts';
 
 export interface ClassicArrowRenderInfo {
 	arrowWing1: Point2D;

@@ -10,4 +10,5 @@ export enum DrawingType {
   Curve = "CURVE",
   TrendLine = "TREND_LINE",
   TimeLine = "TIME_LINE",
+  Polyline = "POLYLINE",
 }
