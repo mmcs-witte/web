@@ -21,6 +21,7 @@ import { Vector as Vector2D } from '@flatten-js/core';
 import { DrawingBase, DrawingToolBase, RectangleAxisPaneRenderer, type Point, type ViewPoint } from './drawing-base.ts';
 import { MathHelper } from './math-helper.ts';
 import { CollisionHelper } from './collision-helper.ts';
+import { convertViewPointToPoint2D, convertToPrice, calculateDrawingPoint } from './conversion-helper.ts';
 
 export interface AnnulusSectorRenderInfo {
 	annulusCenter: Point2D;
@@ -109,7 +110,7 @@ export function drawFibWedge(renderingScope: BitmapCoordinatesRenderingScope, po
 		const ctx = renderingScope.context;
 		const outX: number = p0.add(angleBisectorVec).x;
 		const outY: number = p0.add(angleBisectorVec).y;
-		ctx.fillColor = lineColor;
+		ctx.fillStyle = lineColor;
 		ctx.strokeStyle = lineColor;
 		ctx.font = '36px Arial';
 		ctx.fillText(`${(currLevel * 100).toFixed(1)}%`, outX - 115, outY);
@@ -142,29 +143,27 @@ class FibWedgePaneRenderer implements IPrimitivePaneRenderer {
 
 			const ctx = scope.context;
 
-			const calculateDrawingPoint = (point: ViewPoint): ViewPoint => {
-				return {
-					x: Math.round(point.x * scope.horizontalPixelRatio),
-					y: Math.round(point.y * scope.verticalPixelRatio),
-				};
-			};
-
 			for (let i = 0; i < this._points.length; i++) {
-				this._points[i] = calculateDrawingPoint(this._points[i]);
+				this._points[i] = calculateDrawingPoint(this._points[i], scope);
 			}
+
+      const drawingPoints: Point2D[] = [];
+      this._points.forEach((it) => {
+        drawingPoints.push(convertViewPointToPoint2D(it));
+      });
 
 			if (this._points.length < 3) {
 				ctx.beginPath();
-				ctx.moveTo(this._points[0].x, this._points[0].y);
-				ctx.lineTo(this._points[1].x, this._points[1].y);
+				ctx.moveTo(drawingPoints[0].x, drawingPoints[0].y);
+				ctx.lineTo(drawingPoints[1].x, drawingPoints[1].y);
 				ctx.strokeStyle = this._lineStyle;
 				ctx.lineWidth = scope.verticalPixelRatio;
 				ctx.stroke();
 			} else {
 				const points: Point2D[] = [
-					new Point2D(this._points[0].x, this._points[0].y),
-					new Point2D(this._points[1].x, this._points[1].y),
-					new Point2D(this._points[2].x, this._points[2].y),
+          convertViewPointToPoint2D(this._points[0]),
+          convertViewPointToPoint2D(this._points[1]),
+          convertViewPointToPoint2D(this._points[2]),
 				];
 
 				drawFibWedge(scope, points, this._fibonacciLevels, this._fibonacciFillColors, this._fibonacciLineColors);
@@ -177,12 +176,17 @@ class FibWedgePaneRenderer implements IPrimitivePaneRenderer {
 			return null;
 		}
 
+    const drawingPoints: Point2D[] = [];
+    this._points.forEach((it) => {
+      drawingPoints.push(convertViewPointToPoint2D(it));
+    });
+
 		const tolerance: number = 3e-0;
 
 		const hitTestPoint: Point2D = new Point2D(x, y);
-		const center: Vector2D = new Vector2D(this._points[0].x, this._points[0].y);
-		const r1: Vector2D = new Vector2D(this._points[1].x, this._points[1].y);
-		const r2: Vector2D = new Vector2D(this._points[2].x, this._points[2].y);
+		const center: Vector2D = new Vector2D(drawingPoints[0].x, drawingPoints[0].y);
+		const r1: Vector2D = new Vector2D(drawingPoints[1].x, drawingPoints[1].y);
+		const r2: Vector2D = new Vector2D(drawingPoints[2].x, drawingPoints[2].y);
 
 		const radiusLine1: Segment = new Segment(new Point2D(center.x, center.y), new Point2D(r1.x, r1.y));
 		const radiusLine2: Segment = new Segment(new Point2D(center.x, center.y), new Point2D(r2.x, r2.y));
@@ -284,8 +288,8 @@ abstract class FibWedgeAxisPaneView implements IPrimitivePaneView {
 class FibWedgePriceAxisPaneView extends FibWedgeAxisPaneView {
 	getPoints(): [Coordinate | null, Coordinate | null] {
 		const series = this._source.series;
-		const y1 = series.priceToCoordinate(this._source._bounds._minPrice);
-		const y2 = series.priceToCoordinate(this._source._bounds._maxPrice);
+		const y1 = series.priceToCoordinate(convertToPrice(this._source._bounds._minPrice));
+		const y2 = series.priceToCoordinate(convertToPrice(this._source._bounds._maxPrice));
 		return [y1, y2];
 	}
 }
@@ -293,8 +297,8 @@ class FibWedgePriceAxisPaneView extends FibWedgeAxisPaneView {
 class FibWedgeTimeAxisPaneView extends FibWedgeAxisPaneView {
 	getPoints(): [Coordinate | null, Coordinate | null] {
 		const timeScale = this._source.chart.timeScale();
-		const x1 = timeScale.timeToCoordinate(this._source._bounds._minTime);
-		const x2 = timeScale.timeToCoordinate(this._source._bounds._maxTime);
+		const x1 = timeScale.timeToCoordinate(this._source._bounds._minTime as Time);
+		const x2 = timeScale.timeToCoordinate(this._source._bounds._maxTime as Time);
 		return [x1, x2];
 	}
 }

@@ -6,7 +6,7 @@ import {
   ListboxOptions,
   ListboxOption,
 } from '@headlessui/vue'
-import { useIndicatorsStore } from '@/stores/indicators.ts'
+import { useIndicatorsStore } from '../stores/indicators'
 import { IndicatorType } from '../types/indicators'
 
 const indicatorsStore = useIndicatorsStore()

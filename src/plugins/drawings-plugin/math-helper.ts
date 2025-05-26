@@ -1,5 +1,4 @@
 import { Point as Point2D, Vector as Vector2D } from "@flatten-js/core";
-import { Box } from "@flatten-js/core";
 
 export interface BezierCurvesPointsInfo {
     endPoints: Point2D[];

@@ -1,4 +1,4 @@
-import { BitmapPositionLength } from './common.ts';
+import type { BitmapPositionLength } from './common.ts';
 
 /**
  * Calculates the position and width which will completely full the space for the bar.

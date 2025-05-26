@@ -20,6 +20,7 @@ import { Vector as Vector2D } from '@flatten-js/core';
 import { DrawingBase, DrawingToolBase, RectangleAxisPaneRenderer, type Point, type ViewPoint } from './drawing-base.ts';
 import { MathHelper, type BezierCurvesPointsInfo } from './math-helper.ts';
 import { CollisionHelper } from './collision-helper.ts';
+import { calculateDrawingPoint, convertViewPointToPoint2D, convertViewPointToVector2D } from './conversion-helper.ts';
 
 
 export function fillBezierPath(renderingScope: BitmapCoordinatesRenderingScope, bezierCurveInfo: BezierCurvesPointsInfo, fillColor: string, lineColor: string) {
@@ -85,30 +86,29 @@ class CurvePaneRenderer implements IPrimitivePaneRenderer {
 			}
 
 			const ctx = scope.context;
-			const calculateDrawingPoint = (point: ViewPoint): ViewPoint => {
-				return {
-					x: Math.round(point.x * scope.horizontalPixelRatio),
-					y: Math.round(point.y * scope.verticalPixelRatio)
-				};
-			};
 
 			for (let i = 0; i < this._points.length; i++) {
-				this._points[i] = calculateDrawingPoint(this._points[i]);
+				this._points[i] = calculateDrawingPoint(this._points[i], scope);
 			}
+
+      const drawingPoints: Point2D[] = [];
+      this._points.forEach((it) => {
+        drawingPoints.push(convertViewPointToPoint2D(it));
+      });
 
 			if (this._points.length < 3) {
 				ctx.beginPath();
-				ctx.moveTo(this._points[0].x, this._points[0].y);
-				ctx.lineTo(this._points[1].x, this._points[1].y);
+				ctx.moveTo(drawingPoints[0].x, drawingPoints[0].y);
+				ctx.lineTo(drawingPoints[1].x, drawingPoints[1].y);
 				ctx.strokeStyle = this._options.lineColor;
 				ctx.lineWidth = scope.verticalPixelRatio;
 				ctx.stroke();
 			}
 			else {
 				const bezierCurveInfo = MathHelper.GetCubicBezierCurveDrawingPoints(
-					new Point2D(this._points[0].x, this._points[0].y),
-					new Point2D(this._points[2].x, this._points[2].y),
-					new Point2D(this._points[1].x, this._points[1].y),
+					convertViewPointToPoint2D(this._points[0]),
+					convertViewPointToPoint2D(this._points[2]),
+					convertViewPointToPoint2D(this._points[1]),
 				);
 				fillBezierPath(scope, bezierCurveInfo, this._options.fillColor, this._options.lineColor);
 			}
@@ -117,11 +117,12 @@ class CurvePaneRenderer implements IPrimitivePaneRenderer {
 
 	hitTest(x: number, y: number): PrimitiveHoveredItem | null {
 		if (this._points.length < 3) {
-			return;
+			return null;
 		}
-		const vertex1: Vector2D = new Vector2D(this._points[0].x, this._points[0].y);
-		const vertex2: Vector2D = new Vector2D(this._points[1].x, this._points[1].y);
-		const coVertex: Vector2D = new Vector2D(this._points[2].x, this._points[2].y);
+
+		const vertex1: Vector2D = convertViewPointToVector2D(this._points[0]);
+		const vertex2: Vector2D = convertViewPointToVector2D(this._points[1]);
+		const coVertex: Vector2D = convertViewPointToVector2D(this._points[2]);
 
 		const dir: Vector2D = vertex1.subtract(vertex2);
 		const controlPoint1: Vector2D = coVertex.add(dir.scale(0.25, 0.25));

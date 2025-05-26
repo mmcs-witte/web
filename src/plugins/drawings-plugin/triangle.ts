@@ -23,6 +23,7 @@ import {
 } from "./drawing-base.ts";
 import { Point as Point2D } from "@flatten-js/core";
 import { CollisionHelper } from "./collision-helper.ts";
+import { calculateDrawingPoint, convertViewPointToPoint2D } from "./conversion-helper.ts";
 
 class TrianglePaneRenderer implements IPrimitivePaneRenderer {
   _points: ViewPoint[];
@@ -41,40 +42,26 @@ class TrianglePaneRenderer implements IPrimitivePaneRenderer {
 
       const ctx = scope.context;
 
-      const calculateDrawingPoint = (point: ViewPoint): ViewPoint => {
-        return {
-          x: Math.round(point.x * scope.horizontalPixelRatio),
-          y: Math.round(point.y * scope.verticalPixelRatio),
-        };
-      };
+      const drawingPoints: Point2D[] = [];
+      this._points.forEach((it) => {
+        drawingPoints.push(convertViewPointToPoint2D(calculateDrawingPoint(it, scope)));
+      });
 
-      const drawingPoint1: ViewPoint = calculateDrawingPoint(this._points[0]);
-      const drawingPoint2: ViewPoint = calculateDrawingPoint(this._points[1]);
-      const drawingPoint3: ViewPoint =
-        this._points.length > 2
-          ? calculateDrawingPoint(this._points[2])
-          : drawingPoint2;
-
-      if (this._points.length < 3) {
+      if (drawingPoints.length < 3) {
         ctx.beginPath();
-        ctx.moveTo(drawingPoint1.x, drawingPoint1.y);
-        ctx.lineTo(drawingPoint2.x, drawingPoint2.y);
+        ctx.moveTo(drawingPoints[0].x, drawingPoints[0].y);
+        ctx.lineTo(drawingPoints[2].x, drawingPoints[1].y);
         ctx.strokeStyle = this._options.lineColor;
         ctx.lineWidth = scope.verticalPixelRatio;
         ctx.stroke();
       } else {
-        const points: Point2D[] = [
-          new Point2D(drawingPoint1.x, drawingPoint1.y),
-          new Point2D(drawingPoint2.x, drawingPoint2.y),
-          new Point2D(drawingPoint3.x, drawingPoint3.y),
-        ];
         ctx.fillStyle = this._options.fillColor;
         ctx.strokeStyle = this._options.lineColor;
         ctx.lineWidth = scope.verticalPixelRatio;
         ctx.beginPath();
-        ctx.moveTo(points[0].x, points[0].y);
-        ctx.lineTo(points[1].x, points[1].y);
-        ctx.lineTo(points[2].x, points[2].y);
+        ctx.moveTo(drawingPoints[0].x, drawingPoints[0].y);
+        ctx.lineTo(drawingPoints[1].x, drawingPoints[1].y);
+        ctx.lineTo(drawingPoints[2].x, drawingPoints[2].y);
         ctx.closePath();
         ctx.fill();
         ctx.stroke();
@@ -84,15 +71,15 @@ class TrianglePaneRenderer implements IPrimitivePaneRenderer {
 
   hitTest(x: number, y: number): PrimitiveHoveredItem | null {
     if (this._points.length < 3) {
-      return;
+      return null;
     }
 
     const hitTestPoint: Point2D = new Point2D(x, y);
 
     const polygonPoints: Point2D[] = [
-      new Point2D(this._points[0].x, this._points[0].y),
-      new Point2D(this._points[1].x, this._points[1].y),
-      new Point2D(this._points[2].x, this._points[2].y),
+          convertViewPointToPoint2D(this._points[0]),
+          convertViewPointToPoint2D(this._points[1]),
+          convertViewPointToPoint2D(this._points[2]),
     ];
 
     const hit: boolean = CollisionHelper.IsPointInPolygon(hitTestPoint, polygonPoints)
@@ -174,8 +161,8 @@ abstract class TriangleAxisPaneView implements IPrimitivePaneView {
 class TrianglePriceAxisPaneView extends TriangleAxisPaneView {
   getPoints(): [Coordinate | null, Coordinate | null] {
     const series = this._source.series;
-    const y1 = series.priceToCoordinate(this._source._bounds._minPrice);
-    const y2 = series.priceToCoordinate(this._source._bounds._maxPrice);
+    const y1 = series.priceToCoordinate(this._source._bounds._minPrice as number);
+    const y2 = series.priceToCoordinate(this._source._bounds._maxPrice as number);
     return [y1, y2];
   }
 }
@@ -183,8 +170,8 @@ class TrianglePriceAxisPaneView extends TriangleAxisPaneView {
 class TriangleTimeAxisPaneView extends TriangleAxisPaneView {
   getPoints(): [Coordinate | null, Coordinate | null] {
     const timeScale = this._source.chart.timeScale();
-    const x1 = timeScale.timeToCoordinate(this._source._bounds._minTime);
-    const x2 = timeScale.timeToCoordinate(this._source._bounds._maxTime);
+    const x1 = timeScale.timeToCoordinate(this._source._bounds._minTime as Time);
+    const x2 = timeScale.timeToCoordinate(this._source._bounds._maxTime as Time);
     return [x1, x2];
   }
 }

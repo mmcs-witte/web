@@ -115,7 +115,7 @@ export class DrawingBase<DrawingOptions> extends ChartInstrumentBase {
     this.requestUpdate();
   }
 
-  hitTest(x: number, y: number): PrimitiveHoveredItem | null {
+  hitTest(_x: number, _y: number): PrimitiveHoveredItem | null {
     return null;
   }
 
@@ -215,7 +215,7 @@ export class DrawingToolBase<
     }
   }
 
-  protected _onDblClick(param: MouseEventParams) {
+  protected _onDblClick(_param: MouseEventParams) {
     return;
   }
 

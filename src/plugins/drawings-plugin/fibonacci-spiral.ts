@@ -21,6 +21,7 @@ import { Point as Point2D, Segment, Vector as Vector2D } from '@flatten-js/core'
 import { DrawingBase, DrawingToolBase, RectangleAxisPaneRenderer, type Point, type ViewPoint } from './drawing-base.ts';
 import { MathHelper } from './math-helper.ts';
 import { CollisionHelper } from './collision-helper.ts';
+import { calculateDrawingPoint, convertViewPointToPoint2D } from './conversion-helper.ts';
 
 export interface FibSpiralRenderInfo {
 	rotationCenter: ViewPoint;
@@ -48,29 +49,18 @@ class FibSpiralPaneRenderer implements IPrimitivePaneRenderer {
 			if (this._fibSpiralRendeInfo.numArcs == 0)
 				return;
 
-			const calculateDrawingPoint = (point: ViewPoint): ViewPoint => {
-				if (point.x == null || point.y == null) {
-					return { x: 0, y: 0 };
-				}
-
-				return {
-					x: Math.round(point.x * scope.horizontalPixelRatio),
-					y: Math.round(point.y * scope.verticalPixelRatio)
-				};
-			};
-
 			const degreesToRadian = (degrees: number): number => {
 				return degrees / 180.0 * Math.PI;
 			}
 
-			const rotationCenter = calculateDrawingPoint(this._fibSpiralRendeInfo.rotationCenter);
+			const rotationCenter = convertViewPointToPoint2D(calculateDrawingPoint(this._fibSpiralRendeInfo.rotationCenter, scope));
 			const spiralRotationAngle = this._fibSpiralRendeInfo.spiralRotationAngle;
 			const numArcs = this._fibSpiralRendeInfo.numArcs;
 			const arcCenters = this._fibSpiralRendeInfo.arcCenters;
 			const arcRadiuses = this._fibSpiralRendeInfo.arcRadiuses;
 			const arcAngles = this._fibSpiralRendeInfo.arcAngles;
-			const rayStart = calculateDrawingPoint(this._fibSpiralRendeInfo.rayStart);
-			const rayEnd = calculateDrawingPoint(this._fibSpiralRendeInfo.rayEnd);
+			const rayStart = convertViewPointToPoint2D(calculateDrawingPoint(this._fibSpiralRendeInfo.rayStart, scope));
+			const rayEnd = convertViewPointToPoint2D(calculateDrawingPoint(this._fibSpiralRendeInfo.rayEnd, scope));
 
 			const ctx = scope.context;
 			ctx.save();
@@ -84,7 +74,7 @@ class FibSpiralPaneRenderer implements IPrimitivePaneRenderer {
 
 			// Draw arcs
 			for (let i = 0; i < numArcs; ++i) {
-				const center = calculateDrawingPoint(arcCenters[i]);
+				const center: Point2D = convertViewPointToPoint2D(calculateDrawingPoint(arcCenters[i], scope));
 				const centerX = center.x;
 				const centerY = center.y;
 				const radius = arcRadiuses[i];

@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import Chart from './components/Chart.vue'
+import Chart from './components/Chart.vue';
 import DrawingsToolbar from './components/DrawingsToolbar.vue';
 import WitteHeader from './components/WitteHeader.vue'
 </script>
