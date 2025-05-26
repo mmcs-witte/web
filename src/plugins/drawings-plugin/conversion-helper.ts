@@ -17,7 +17,7 @@ export function convertViewPointToVector2D(point: ViewPoint) : Vector2D {
 
 export function calculateDrawingPoint(point: ViewPoint, scope: BitmapCoordinatesRenderingScope): ViewPoint {
 	return {
-		x: Math.round(point.x?? 0 * scope.horizontalPixelRatio) as Coordinate,
-		y: Math.round(point.y?? 0 * scope.verticalPixelRatio) as Coordinate,
+		x: Math.round((point.x?? 0) * scope.horizontalPixelRatio) as Coordinate,
+		y: Math.round((point.y?? 0) * scope.verticalPixelRatio) as Coordinate,
 	};
 };
