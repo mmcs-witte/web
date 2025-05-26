@@ -23,12 +23,19 @@ const indicatorsList: indicatorItem[] = [
   { id: 2, name: 'Bollinger Bands', type: IndicatorType.BollingerBands, unavailable: false },
 ]
 
-const selectedIndicator = ref(null)
+export interface Indicator {
+  id: number
+  name: string
+  type: string
+  unavailable?: boolean
+}
+
+const selectedIndicator = ref<Indicator | null>(null)
 
 watch(selectedIndicator, (newVal) => {
   if (newVal == null) return
 
-  indicatorsStore.addedIndicator = newVal.type
+  indicatorsStore.addedIndicator = newVal
 })
 </script>
 
