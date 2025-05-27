@@ -21,6 +21,7 @@ import { DrawingBase, DrawingToolBase, RectangleAxisPaneRenderer, type Point, ty
 import { Point as Point2D } from '@flatten-js/core';
 import { Segment } from '@flatten-js/core';
 import { Vector as Vector2D } from '@flatten-js/core';
+import { calculateDrawingPoint, convertViewPointToPoint2D } from './conversion-helper.ts';
 
 class FibChannelPaneRenderer implements IPrimitivePaneRenderer {
 	_points: ViewPoint[];
@@ -41,18 +42,14 @@ class FibChannelPaneRenderer implements IPrimitivePaneRenderer {
 
 			const ctx = scope.context;
 
-			const calculateDrawingPoint = (point: ViewPoint): ViewPoint => {
-				return {
-					x: Math.round(point.x * scope.horizontalPixelRatio),
-					y: Math.round(point.y * scope.verticalPixelRatio)
-				};
-			};
-
 			for (let i = 0; i < this._points.length; i++) {
-				this._points[i] = calculateDrawingPoint(this._points[i]);
+				this._points[i] = calculateDrawingPoint(this._points[i], scope);
 			}
+      
+      const p0 = convertViewPointToPoint2D(this._points[0]);
+      const p1 = convertViewPointToPoint2D(this._points[1]);
 
-			const dir: Vector2D = new Vector2D(0, this._points[1].y - this._points[0].y);
+			const dir: Vector2D = new Vector2D(0, p1.y - p0.y);
 
 			ctx.font = '36px Arial';
 
@@ -70,14 +67,14 @@ class FibChannelPaneRenderer implements IPrimitivePaneRenderer {
 				const nextLevel: number = fibonacciLevels[nextIndex];
 				if (currIndex != nextIndex) {
 					ctx.fillStyle = fibonacciLineColors[nextIndex % fibonacciLineColors.length];
-					const currY = new Vector2D(0, this._points[0].y).add(dir.scale(0, curLevel)).y;
-					const nextY = new Vector2D(0, this._points[0].y).add(dir.scale(0, nextLevel)).y;
+					const currY = new Vector2D(0, p0.y).add(dir.scale(0, curLevel)).y;
+					const nextY = new Vector2D(0, p0.y).add(dir.scale(0, nextLevel)).y;
 
 					ctx.beginPath();
-					ctx.moveTo(this._points[0].x, currY);
-					ctx.lineTo(this._points[1].x, currY);
-					ctx.lineTo(this._points[1].x, nextY);
-					ctx.lineTo(this._points[0].x, nextY);
+					ctx.moveTo(p0.x, currY);
+					ctx.lineTo(p1.x, currY);
+					ctx.lineTo(p1.x, nextY);
+					ctx.lineTo(p0.x, nextY);
 					ctx.fill();
 				}
 			}
@@ -90,33 +87,36 @@ class FibChannelPaneRenderer implements IPrimitivePaneRenderer {
 				ctx.lineWidth = 5;
 
 				const level = fibonacciLevels[i];
-				const y = new Vector2D(0, this._points[0].y).add(dir.scale(0, level)).y;
+				const y = new Vector2D(0, p0.y).add(dir.scale(0, level)).y;
 				ctx.beginPath();
-				ctx.moveTo(this._points[0].x, y);
-				ctx.lineTo(this._points[1].x, y);
+				ctx.moveTo(p0.x, y);
+				ctx.lineTo(p1.x, y);
 				ctx.stroke();
-				ctx.fillText(`${(level * 100).toFixed(1)}%`, (this._points[1].x + 4), (y - 2));
+				ctx.fillText(`${(level * 100).toFixed(1)}%`, (p1.x + 4), (y - 2));
 			}
 		});
 	}
 
 	hitTest(x: number, y: number): PrimitiveHoveredItem | null {
 		if (this._points.length < 2) {
-			return;
+			return null;
 		}
 
 		const tolerance: number = 3e-0;
 		let hit: boolean = false;
 		const hitTestPoint: Point2D = new Point2D(x, y);
 
-		const high = Math.min(this._points[0].y, this._points[1].y);
-		const low = Math.max(this._points[0].y, this._points[1].y);
+    const p0 = convertViewPointToPoint2D(this._points[0]);
+    const p1 = convertViewPointToPoint2D(this._points[1]);
+
+		const high = Math.min(p0.y, p1.y);
+		const low = Math.max(p0.y, p1.y);
 		const height = low - high;
 
 		for (let i: number = 0; i < this._options.fibonacciLevels.length; i++) {
 			const level = this._options.fibonacciLevels[i];
 			const y = low - height * level;
-			const line = new Segment(new Point2D(this._points[0].x, y), new Point2D(this._points[1].x, y));
+			const line = new Segment(new Point2D(p0.x, y), new Point2D(p1.x, y));
 			if (line.distanceTo(hitTestPoint)[0] < tolerance) {
 				hit = true;
 				break;
@@ -200,8 +200,8 @@ abstract class FibChannelAxisPaneView implements IPrimitivePaneView {
 class FibChannelPriceAxisPaneView extends FibChannelAxisPaneView {
 	getPoints(): [Coordinate | null, Coordinate | null] {
 		const series = this._source.series;
-		const y1 = series.priceToCoordinate(this._source._bounds._minPrice);
-		const y2 = series.priceToCoordinate(this._source._bounds._maxPrice);
+		const y1 = series.priceToCoordinate(this._source._bounds._minPrice as number);
+		const y2 = series.priceToCoordinate(this._source._bounds._maxPrice as number);
 		return [y1, y2];
 	}
 }
@@ -209,8 +209,8 @@ class FibChannelPriceAxisPaneView extends FibChannelAxisPaneView {
 class FibChannelTimeAxisPaneView extends FibChannelAxisPaneView {
 	getPoints(): [Coordinate | null, Coordinate | null] {
 		const timeScale = this._source.chart.timeScale();
-		const x1 = timeScale.timeToCoordinate(this._source._bounds._minTime);
-		const x2 = timeScale.timeToCoordinate(this._source._bounds._maxTime);
+		const x1 = timeScale.timeToCoordinate(this._source._bounds._minTime as Time);
+		const x2 = timeScale.timeToCoordinate(this._source._bounds._maxTime as Time);
 		return [x1, x2];
 	}
 }

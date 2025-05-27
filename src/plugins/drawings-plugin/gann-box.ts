@@ -1,4 +1,4 @@
-import type { CanvasRenderingTarget2D, BitmapCoordinatesRenderingScope } from 'fancy-canvas';
+import type { CanvasRenderingTarget2D } from 'fancy-canvas';
 import {
 	isBusinessDay
 } from 'lightweight-charts';
@@ -16,10 +16,8 @@ import type {
 	PrimitiveHoveredItem,
 } from 'lightweight-charts';
 import { Point as Point2D } from '@flatten-js/core';
-import { Vector as Vector2D } from '@flatten-js/core';
 import { DrawingBase, DrawingToolBase, RectangleAxisPaneRenderer, type Point, type ViewPoint } from './drawing-base.ts';
-import { CollisionHelper } from './collision-helper.ts';
-
+import { calculateDrawingPoint, convertToPrice, convertViewPointToPoint2D } from './conversion-helper.ts';
 
 export interface LineInfo {
 	level: number;
@@ -245,21 +243,20 @@ class GannBoxPaneRenderer implements IPrimitivePaneRenderer {
 			}
 
 			const ctx = scope.context;
-			const calculateDrawingPoint = (point: ViewPoint): ViewPoint => {
-				return {
-					x: Math.round(point.x * scope.horizontalPixelRatio),
-					y: Math.round(point.y * scope.verticalPixelRatio)
-				};
-			};
 
 			for (let i = 0; i < this._points.length; i++) {
-				this._points[i] = calculateDrawingPoint(this._points[i]);
+				this._points[i] = calculateDrawingPoint(this._points[i], scope);
 			}
+
+      const drawingPoints: Point2D[] = [];
+      this._points.forEach((it) => {
+        drawingPoints.push(convertViewPointToPoint2D(it));
+      });
 
 			if (this._points.length < 3) {
 				ctx.beginPath();
-				ctx.moveTo(this._points[0].x, this._points[0].y);
-				ctx.lineTo(this._points[1].x, this._points[1].y);
+				ctx.moveTo(drawingPoints[0].x, drawingPoints[0].y);
+				ctx.lineTo(drawingPoints[1].x, drawingPoints[1].y);
 				ctx.strokeStyle = this._fillColor;
 				ctx.lineWidth = scope.verticalPixelRatio;
 				ctx.stroke();
@@ -267,35 +264,35 @@ class GannBoxPaneRenderer implements IPrimitivePaneRenderer {
 		});
 	}
 
-	hitTest(x: number, y: number): PrimitiveHoveredItem | null {
+	hitTest(_x: number, _y: number): PrimitiveHoveredItem | null {
 		return null;
 		
-		if (this._points.length < 3) {
-			return;
-		}
-		const vertex1: Vector2D = new Vector2D(this._points[0].x, this._points[0].y);
-		const vertex2: Vector2D = new Vector2D(this._points[1].x, this._points[1].y);
-		const coVertex: Vector2D = new Vector2D(this._points[2].x, this._points[2].y);
+		// if (this._points.length < 3) {
+		// 	return null;
+		// }
+		// const vertex1: Vector2D = convertViewPointToPoint2D(this._points[0]);
+		// const vertex2: Vector2D = convertViewPointToPoint2D(this._points[1]);
+		// const coVertex: Vector2D = convertViewPointToPoint2D(this._points[2]);
 
-		const dir: Vector2D = vertex1.subtract(vertex2);
-		const controlPoint1: Vector2D = coVertex.add(dir.scale(0.25, 0.25));
-		const controlPoint2: Vector2D = coVertex.subtract(dir.scale(0.25, 0.25));
+		// const dir: Vector2D = vertex1.subtract(vertex2);
+		// const controlPoint1: Vector2D = coVertex.add(dir.scale(0.25, 0.25));
+		// const controlPoint2: Vector2D = coVertex.subtract(dir.scale(0.25, 0.25));
 
-		const epsilon: number = 3e-0;
+		// const epsilon: number = 3e-0;
 
-		const currPoint = new Point2D(x, y);
-		const hitFirstHalf = CollisionHelper.HitTestQuadraticBezierCurve(new Point2D(vertex1.x, vertex1.y), new Point2D(coVertex.x, coVertex.y), new Point2D(controlPoint1.x, controlPoint1.y), currPoint, epsilon);
-		const hitSecondHalf = CollisionHelper.HitTestQuadraticBezierCurve(new Point2D(coVertex.x, coVertex.y), new Point2D(vertex2.x, vertex2.y), new Point2D(controlPoint2.x, controlPoint2.y), currPoint, epsilon);
+		// const currPoint = new Point2D(x, y);
+		// const hitFirstHalf = CollisionHelper.HitTestQuadraticBezierCurve(new Point2D(vertex1.x, vertex1.y), new Point2D(coVertex.x, coVertex.y), new Point2D(controlPoint1.x, controlPoint1.y), currPoint, epsilon);
+		// const hitSecondHalf = CollisionHelper.HitTestQuadraticBezierCurve(new Point2D(coVertex.x, coVertex.y), new Point2D(vertex2.x, vertex2.y), new Point2D(controlPoint2.x, controlPoint2.y), currPoint, epsilon);
 
-		if (!hitFirstHalf && !hitSecondHalf) {
-			return null;
-		}
+		// if (!hitFirstHalf && !hitSecondHalf) {
+		// 	return null;
+		// }
 
-		return {
-			cursorStyle: "grab",
-			externalId: 'gann-box-drawing',
-			zOrder: 'top',
-		};
+		// return {
+		// 	cursorStyle: "grab",
+		// 	externalId: 'gann-box-drawing',
+		// 	zOrder: 'top',
+		// };
 	}
 }
 
@@ -364,8 +361,8 @@ abstract class GannBoxAxisPaneView implements IPrimitivePaneView {
 class GannBoxPriceAxisPaneView extends GannBoxAxisPaneView {
 	getPoints(): [Coordinate | null, Coordinate | null] {
 		const series = this._source.series;
-		const y1 = series.priceToCoordinate(this._source._bounds._minPrice);
-		const y2 = series.priceToCoordinate(this._source._bounds._maxPrice);
+		const y1 = series.priceToCoordinate(convertToPrice(this._source._bounds._minPrice));
+		const y2 = series.priceToCoordinate(convertToPrice(this._source._bounds._maxPrice));
 		return [y1, y2];
 	}
 }
@@ -373,8 +370,8 @@ class GannBoxPriceAxisPaneView extends GannBoxAxisPaneView {
 class GannBoxTimeAxisPaneView extends GannBoxAxisPaneView {
 	getPoints(): [Coordinate | null, Coordinate | null] {
 		const timeScale = this._source.chart.timeScale();
-		const x1 = timeScale.timeToCoordinate(this._source._bounds._minTime);
-		const x2 = timeScale.timeToCoordinate(this._source._bounds._maxTime);
+		const x1 = timeScale.timeToCoordinate(this._source._bounds._minTime as Time);
+		const x2 = timeScale.timeToCoordinate(this._source._bounds._maxTime as Time);
 		return [x1, x2];
 	}
 }

@@ -34,15 +34,15 @@ export abstract class CollisionHelper {
     public static HitTestLineToRect(lineStart1: Point2D, lineEnd1: Point2D, rect: Box): [boolean, Point2D[]] {
         // check if the line has hit any of the rectangle's sides
         // uses the Line/Line function below
-        let collisionPoints: Point2D[] = [];
+        const collisionPoints: Point2D[] = [];
 
         let collisionPoint: Point2D;
         const rectPoints: Point2D[] = [new Point2D(rect.xmin, rect.ymin), new Point2D(rect.xmin, rect.ymax), new Point2D(rect.xmax, rect.ymax), new Point2D(rect.xmax, rect.ymin)];
 
         let bHit: boolean = false;
         for (let i = 0; i < 4; ++i) {
-            let lineStart2 = rectPoints[i % 4];
-            let lineEnd2 = rectPoints[(i + 1) % 4];
+            const lineStart2 = rectPoints[i % 4];
+            const lineEnd2 = rectPoints[(i + 1) % 4];
 
             [bHit, collisionPoint] = this.HitTestLineToLine(lineStart1, lineEnd1, lineStart2, lineEnd2);
             if (bHit) {
@@ -122,10 +122,10 @@ export abstract class CollisionHelper {
         const controlPoint1 = new Vector2D(coVertex.x, coVertex.y).add(dir.scale(0.25, 0.25));
         const controlPoint2 = new Vector2D(coVertex.x, coVertex.y).subtract(dir.scale(0.25, 0.25));
 
-        let firstHalfPoints: Point2D[] = MathHelper.ApproximateQuadraticBezierCurveWithPolyline(vertex1, coVertex, new Point2D(controlPoint1.x, controlPoint1.y));
-        let secondHalfPoints: Point2D[] = MathHelper.ApproximateQuadraticBezierCurveWithPolyline(coVertex, vertex2, new Point2D(controlPoint2.x, controlPoint2.y));
+        const firstHalfPoints: Point2D[] = MathHelper.ApproximateQuadraticBezierCurveWithPolyline(vertex1, coVertex, new Point2D(controlPoint1.x, controlPoint1.y));
+        const secondHalfPoints: Point2D[] = MathHelper.ApproximateQuadraticBezierCurveWithPolyline(coVertex, vertex2, new Point2D(controlPoint2.x, controlPoint2.y));
 
-        let polygonPoints: Point2D[] = firstHalfPoints.concat(secondHalfPoints);
+        const polygonPoints: Point2D[] = firstHalfPoints.concat(secondHalfPoints);
 
         return this.IsPointInPolygon(point, polygonPoints);
     }

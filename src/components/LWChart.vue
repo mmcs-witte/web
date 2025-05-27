@@ -94,7 +94,7 @@ function getDrawingTool(type) {
 let series;
 let chart;
 let drawingTools;
-let selectedDrawingTool = ref(DrawingType.Arrow)
+let selectedDrawingTool = ref(DrawingType.Triangle)
 
 let indicatorsList;
 
@@ -142,10 +142,10 @@ const createDrawingTools = (chart, series) => {
 }
 
 drawingStore.$subscribe((mutation, store) => {
-  if (store.currentDrawing === DrawingType.Arrow) return
+  if (store.currentDrawing === DrawingType.Triangle) return
   selectedDrawingTool.value = getDrawingTool(store.currentDrawing)
   selectedDrawingTool.value.startDrawing()
-  drawingStore.currentDrawing = DrawingType.Arrow
+  drawingStore.currentDrawing = DrawingType.Triangle
 })
 
 indicatorsStore.$subscribe((mutation, store) => {

@@ -6,7 +6,7 @@ import {
   ListboxOptions,
   ListboxOption,
 } from '@headlessui/vue'
-import { useChartStore } from '@/stores/chart.ts'
+import { useChartStore } from '../stores/chart'
 
 const chartStore = useChartStore()
 

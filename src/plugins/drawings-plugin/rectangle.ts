@@ -25,6 +25,7 @@ import {
 
 import { CollisionHelper } from "./collision-helper.ts";
 import { Box, Point as Point2D } from "@flatten-js/core";
+import { calculateDrawingPoint, convertToPrice, convertViewPointToPoint2D } from "./conversion-helper.ts";
 class RectanglePaneRenderer implements IPrimitivePaneRenderer {
   _points: ViewPoint[];
   _options: RectangleOptions;
@@ -42,35 +43,31 @@ class RectanglePaneRenderer implements IPrimitivePaneRenderer {
 
       const ctx = scope.context;
 
-      const calculateDrawingPoint = (point: ViewPoint): ViewPoint => {
-        return {
-          x: Math.round(point.x * scope.horizontalPixelRatio),
-          y: Math.round(point.y * scope.verticalPixelRatio),
-        };
-      };
-
-      const drawingPoint1: ViewPoint = calculateDrawingPoint(this._points[0]);
-      const drawingPoint2: ViewPoint = calculateDrawingPoint(this._points[1]);
+      const p0: Point2D = convertViewPointToPoint2D(calculateDrawingPoint(this._points[0], scope));
+      const p1: Point2D = convertViewPointToPoint2D(calculateDrawingPoint(this._points[1], scope));
       ctx.fillStyle = this._options.fillColor;
       ctx.fillRect(
-        Math.min(drawingPoint1.x, drawingPoint2.x),
-        Math.min(drawingPoint1.y, drawingPoint2.y),
-        Math.abs(drawingPoint1.x - drawingPoint2.x),
-        Math.abs(drawingPoint1.y - drawingPoint2.y));
+        Math.min(p0.x, p1.x),
+        Math.min(p0.y, p1.y),
+        Math.abs(p0.x - p1.x),
+        Math.abs(p0.y - p1.y));
     });
   }
   hitTest(x: number, y: number): PrimitiveHoveredItem | null {
     if (this._points.length < 2) {
-      return;
+			return null;
     }
 
     const hitTestPoint: Point2D = new Point2D(x, y);
 
+    const p0: Point2D = convertViewPointToPoint2D(this._points[0]);
+    const p1: Point2D = convertViewPointToPoint2D(this._points[1]);
+
     const bb: Box = new Box(
-      Math.min(this._points[0].x, this._points[1].x),
-      Math.min(this._points[0].y, this._points[1].y),
-      Math.max(this._points[0].x, this._points[1].x),
-      Math.max(this._points[0].y, this._points[1].y),
+      Math.min(p0.x, p1.x),
+      Math.min(p0.y, p1.y),
+      Math.max(p0.x, p1.x),
+      Math.max(p0.y, p1.y),
     )
 
     const hit: boolean = CollisionHelper.IsPointInRectangle(hitTestPoint, bb);
@@ -151,8 +148,8 @@ abstract class RectangleAxisPaneView implements IPrimitivePaneView {
 class RectanglePriceAxisPaneView extends RectangleAxisPaneView {
   getPoints(): [Coordinate | null, Coordinate | null] {
     const series = this._source.series;
-    const y1 = series.priceToCoordinate(this._source._bounds._minPrice);
-    const y2 = series.priceToCoordinate(this._source._bounds._maxPrice);
+    const y1 = series.priceToCoordinate(convertToPrice(this._source._bounds._minPrice));
+    const y2 = series.priceToCoordinate(convertToPrice(this._source._bounds._maxPrice));
     return [y1, y2];
   }
 }
@@ -160,8 +157,8 @@ class RectanglePriceAxisPaneView extends RectangleAxisPaneView {
 class RectangleTimeAxisPaneView extends RectangleAxisPaneView {
   getPoints(): [Coordinate | null, Coordinate | null] {
     const timeScale = this._source.chart.timeScale();
-    const x1 = timeScale.timeToCoordinate(this._source._bounds._minTime);
-    const x2 = timeScale.timeToCoordinate(this._source._bounds._maxTime);
+    const x1 = timeScale.timeToCoordinate(this._source._bounds._minTime as Time);
+    const x2 = timeScale.timeToCoordinate(this._source._bounds._maxTime as Time);
     return [x1, x2];
   }
 }

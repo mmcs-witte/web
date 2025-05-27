@@ -115,16 +115,16 @@ export class DrawingBase<DrawingOptions> extends ChartInstrumentBase {
     this.requestUpdate();
   }
 
-  hitTest(x: number, y: number): PrimitiveHoveredItem | null {
+  hitTest(_x: number, _y: number): PrimitiveHoveredItem | null {
     return null;
   }
 
   protected _updateDrawingBounds(point: Point) {
-    this._bounds._minPrice = this._bounds._minPrice == null ? point.price : Math.min(this._bounds._minPrice, point.price);
-    this._bounds._maxPrice = this._bounds._maxPrice == null ? point.price : Math.max(this._bounds._maxPrice, point.price);
+    this._bounds._minPrice = this._bounds._minPrice == null ? point.price as number : Math.min(this._bounds._minPrice, point.price) as number;
+    this._bounds._maxPrice = this._bounds._maxPrice == null ? point.price as number : Math.max(this._bounds._maxPrice, point.price) as number;
 
-    this._bounds._minTime = this._bounds._minTime == null ? point.time : Math.min(this._bounds._minTime, point.time);
-    this._bounds._maxTime = this._bounds._maxTime == null ? point.time : Math.max(this._bounds._maxTime, point.time);
+    this._bounds._minTime = this._bounds._minTime == null ? point.time as number: Math.min(this._bounds._minTime, point.time as number) as number;
+    this._bounds._maxTime = this._bounds._maxTime == null ? point.time as number: Math.max(this._bounds._maxTime, point.time as number) as number;
   }
 }
 
@@ -215,7 +215,7 @@ export class DrawingToolBase<
     }
   }
 
-  protected _onDblClick(param: MouseEventParams) {
+  protected _onDblClick(_param: MouseEventParams) {
     return;
   }
 

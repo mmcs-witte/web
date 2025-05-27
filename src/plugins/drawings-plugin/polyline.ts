@@ -20,6 +20,7 @@ import { Point as Point2D } from '@flatten-js/core';
 import { Vector as Vector2D } from '@flatten-js/core';
 import { Segment } from '@flatten-js/core';
 import { DrawingToolBase, DrawingBase, RectangleAxisPaneRenderer, type Point, type ViewPoint } from './drawing-base.ts';
+import { calculateDrawingPoint, convertToPrice, convertViewPointToPoint2D } from './conversion-helper.ts';
 
 export interface ClassicArrowRenderInfo {
 	arrowWing1: Point2D;
@@ -75,23 +76,22 @@ class PolylinePaneRenderer implements IPrimitivePaneRenderer {
 			}
 
 			const ctx = scope.context;
-			const calculateDrawingPoint = (point: ViewPoint): ViewPoint => {
-				return {
-					x: Math.round(point.x * scope.horizontalPixelRatio),
-					y: Math.round(point.y * scope.verticalPixelRatio)
-				};
-			};
 
 			for (let i = 0; i < this._points.length; i++) {
-				this._points[i] = calculateDrawingPoint(this._points[i]);
+				this._points[i] = calculateDrawingPoint(this._points[i], scope);
 			}
+
+      const drawingPoints: Point2D[] = [];
+      this._points.forEach((it) => {
+        drawingPoints.push(convertViewPointToPoint2D(it));
+      });
 
 			ctx.beginPath();
 			ctx.lineWidth = 5;
 			ctx.strokeStyle = this._fillColor;
-			ctx.moveTo(this._points[0].x, this._points[0].y);
+			ctx.moveTo(drawingPoints[0].x, drawingPoints[0].y);
 			for (let i = 1; i < this._points.length; i++) {
-				ctx.lineTo(this._points[i].x, this._points[i].y);
+				ctx.lineTo(drawingPoints[i].x, drawingPoints[i].y);
 			}
 			ctx.stroke();
 
@@ -111,14 +111,14 @@ class PolylinePaneRenderer implements IPrimitivePaneRenderer {
 
 	hitTest(x: number, y: number): PrimitiveHoveredItem | null {
 		if (this._points.length < 2) {
-			return;
+			return null;
 		}
 
 		let minDist = Infinity;
 		const epsilon: number = 3e-0;
 		for (let i = 1; i < this._points.length; i++) {
-			const s0: Point2D = new Point2D(this._points[i].x, this._points[i].y);
-			const s1: Point2D = new Point2D(this._points[i - 1].x, this._points[i - 1].y);
+			const s0: Point2D = convertViewPointToPoint2D(this._points[i]);
+			const s1: Point2D = convertViewPointToPoint2D(this._points[i - 1]);
 			const segment: Segment = new Segment(s0, s1);
 			minDist = Math.min(segment.distanceTo(new Point2D(x, y))[0], minDist);
 		}
@@ -200,8 +200,8 @@ abstract class PolylineAxisPaneView implements IPrimitivePaneView {
 class PolylinePriceAxisPaneView extends PolylineAxisPaneView {
 	getPoints(): [Coordinate | null, Coordinate | null] {
 		const series = this._source.series;
-		const y1 = series.priceToCoordinate(this._source._bounds._minPrice);
-		const y2 = series.priceToCoordinate(this._source._bounds._maxPrice);
+		const y1 = series.priceToCoordinate(convertToPrice(this._source._bounds._minPrice));
+		const y2 = series.priceToCoordinate(convertToPrice(this._source._bounds._maxPrice));
 		return [y1, y2];
 	}
 }
@@ -209,8 +209,8 @@ class PolylinePriceAxisPaneView extends PolylineAxisPaneView {
 class PolylineTimeAxisPaneView extends PolylineAxisPaneView {
 	getPoints(): [Coordinate | null, Coordinate | null] {
 		const timeScale = this._source.chart.timeScale();
-		const x1 = timeScale.timeToCoordinate(this._source._bounds._minTime);
-		const x2 = timeScale.timeToCoordinate(this._source._bounds._maxTime);
+		const x1 = timeScale.timeToCoordinate(this._source._bounds._minTime as Time);
+		const x2 = timeScale.timeToCoordinate(this._source._bounds._maxTime as Time);
 		return [x1, x2];
 	}
 }
@@ -223,7 +223,7 @@ abstract class PolylineAxisView implements ISeriesPrimitiveAxisView {
 		this._source = source;
 		this._p = source._points.length > 0
 			? source._points[source._points.length - 1]
-			: { time: 0, price: 0 };
+			: { time: 0, price: 0 } as Point;
 	}
 	abstract update(): void;
 	abstract text(): string;

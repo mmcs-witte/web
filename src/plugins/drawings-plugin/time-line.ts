@@ -16,6 +16,8 @@ import type {
   PrimitiveHoveredItem,
 } from 'lightweight-charts';
 import { DrawingBase, DrawingToolBase, RectangleAxisPaneRenderer, type Point, type ViewPoint } from './drawing-base.ts';
+import { Point as Point2D } from '@flatten-js/core';
+import { calculateDrawingPoint, convertViewPointToPoint2D } from './conversion-helper.ts';
 
 
 class TimeLinePaneRenderer implements IPrimitivePaneRenderer {
@@ -35,34 +37,31 @@ class TimeLinePaneRenderer implements IPrimitivePaneRenderer {
 
       const ctx = scope.context;
 
-      const calculateDrawingPoint = (point: ViewPoint): ViewPoint => {
-        return {
-          x: Math.round(point.x * scope.horizontalPixelRatio),
-          y: Math.round(point.y * scope.verticalPixelRatio)
-        };
-      };
-
       for (let i = 0; i < this._points.length; i++) {
-        this._points[i] = calculateDrawingPoint(this._points[i]);
+        this._points[i] = calculateDrawingPoint(this._points[i], scope);
       }
+
+      const point: Point2D = convertViewPointToPoint2D(this._points[0]);
 
       ctx.lineWidth = this._options.width;
       ctx.strokeStyle = this._options.color;
 
       ctx.beginPath();
-      ctx.moveTo(this._points[0].x, 0);
-      ctx.lineTo(this._points[0].x, scope.bitmapSize.height);
+      ctx.moveTo(point.x, 0);
+      ctx.lineTo(point.x, scope.bitmapSize.height);
       ctx.stroke();
     });
   }
 
-  hitTest(x: number, y: number): PrimitiveHoveredItem | null {
+  hitTest(x: number, _y: number): PrimitiveHoveredItem | null {
     if (this._points.length < 1) {
       return null;
     }
 
+    const p0: Point2D = convertViewPointToPoint2D(this._points[0]);
+
     const tolerance: number = 3e-0;
-    const hit: boolean = Math.abs(x - this._points[0].x) < tolerance;
+    const hit: boolean = Math.abs(x - p0.x) < tolerance;
 
     if (hit) {
       return {
@@ -164,8 +163,8 @@ abstract class TimeLineAxisPaneView implements IPrimitivePaneView {
 class TimeLinePriceAxisPaneView extends TimeLineAxisPaneView {
   getPoints(): [Coordinate | null, Coordinate | null] {
     const series = this._source.series;
-    const y1 = series.priceToCoordinate(this._source._bounds._minPrice);
-    const y2 = series.priceToCoordinate(this._source._bounds._maxPrice);
+    const y1 = series.priceToCoordinate(this._source._bounds._minPrice ?? 0);
+    const y2 = series.priceToCoordinate(this._source._bounds._maxPrice ?? 0);
     return [y1, y2];
   }
 }
@@ -173,8 +172,9 @@ class TimeLinePriceAxisPaneView extends TimeLineAxisPaneView {
 class FibWedgeTimeAxisPaneView extends TimeLineAxisPaneView {
   getPoints(): [Coordinate | null, Coordinate | null] {
     const timeScale = this._source.chart.timeScale();
-    const x1 = timeScale.timeToCoordinate(this._source._bounds._minTime);
-    const x2 = timeScale.timeToCoordinate(this._source._bounds._maxTime);
+
+    const x1 = timeScale.timeToCoordinate(this._source._bounds._minTime as Time);
+    const x2 = timeScale.timeToCoordinate(this._source._bounds._maxTime as Time);
     return [x1, x2];
   }
 }
