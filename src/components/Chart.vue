@@ -94,6 +94,14 @@ const chartOptions = ref({
         labelVisible: true,
     }
   },
+  layout: {
+			attributionLogo: false,
+			background: {
+				type: 'solid',
+				color: 'rgba(50,100,150, 0.2)',
+			},
+			textColor: 'rgba(255,255,255)',
+		},
   });
 const data = ref(generateSampleData(false));
 // Setting series options manually
