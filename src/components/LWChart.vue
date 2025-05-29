@@ -14,21 +14,21 @@ import {
 	HistogramSeries,
 	BaselineSeries,
 } from 'lightweight-charts';
-import { TrendLineDrawingTool } from '../plugins/drawings-plugin/trend-line.ts';
-import { RectangleDrawingTool } from '../plugins/drawings-plugin/rectangle.ts';
-import { TriangleDrawingTool } from '../plugins/drawings-plugin/triangle.ts';
-import { FibChannelDrawingTool } from '../plugins/drawings-plugin/fibonacci-channel.ts';
+import { TrendLineDrawingTool } from "interactive-lw-charts-tools";
+import { RectangleDrawingTool } from "interactive-lw-charts-tools";
+import { TriangleDrawingTool } from "interactive-lw-charts-tools";
+import { FibChannelDrawingTool } from "interactive-lw-charts-tools";
+import { FibSpiralDrawingTool } from "interactive-lw-charts-tools";
+import { CurveDrawingTool } from "interactive-lw-charts-tools";
+import { TimeLineDrawingTool } from "interactive-lw-charts-tools";
+import { FibWedgeDrawingTool } from "interactive-lw-charts-tools";
+import { PolylineDrawingTool } from "interactive-lw-charts-tools";
+import { SMAIndicator } from "interactive-lw-charts-tools";
+import { BandsIndicator } from "interactive-lw-charts-tools";
 
 import { useDrawingsStore } from '../stores/drawings.ts';
 import { DrawingType } from '../types/drawings.ts';
-import { SMAIndicator } from '../plugins/indicators-plugin/simple-moving-average.ts';
-import { BandsIndicator } from '../plugins/indicators-plugin/bollinger-bands.ts';
-import { FibSpiralDrawingTool } from '../plugins/drawings-plugin/fibonacci-spiral.ts';
-import { CurveDrawingTool } from '../plugins/drawings-plugin/curve.ts';
-import { TimeLineDrawingTool } from '../plugins/drawings-plugin/time-line.ts';
 import { useIndicatorsStore } from '../stores/indicators.ts';
-import { FibWedgeDrawingTool } from '../plugins/drawings-plugin/fibonacci-wedge.ts';
-import { PolylineDrawingTool } from '../plugins/drawings-plugin/polyline.ts';
 
 const props = defineProps({
 	type: {
