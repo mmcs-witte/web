@@ -1,4 +1,5 @@
 export enum DrawingType {
+  None = "None",
   Triangle = "TRIANGLE",
   Rectangle = "RECTANGLE",
   PriceLine = "PRICE_LINE",
