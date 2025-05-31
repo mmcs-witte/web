@@ -77,7 +77,7 @@ function getChartSeriesDefinition(type) {
 
 
 function getChartIndicatorsDefinition(type) {
-	switch (type.toLowerCase()) {
+	switch (type. toLowerCase()) {
 		case 'sma':
 			return new SMAIndicator();
     case 'bollinger-bands':
@@ -157,7 +157,7 @@ indicatorsStore.$subscribe((mutation, store) => {
     return
   }
 
-  addIndicator(store.addedIndicator)
+  addIndicator(store.addedIndicator.type)
 
   indicatorsList.push(store.addedIndicator)
   store.addedIndicator = null

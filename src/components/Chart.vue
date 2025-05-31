@@ -70,10 +70,9 @@ function generateSampleData(ohlc) {
   return res;
 }
 
-// Adding explicit chart options
-// TODO: fix this in the future 
 const chartOptions = ref({
   layout: {
+    attributionLogo: false,
     background: {
       color: getComputedStyle(document.documentElement).getPropertyValue('--color-gray-800')
     },
@@ -94,14 +93,6 @@ const chartOptions = ref({
         labelVisible: true,
     }
   },
-  layout: {
-			attributionLogo: false,
-			background: {
-				type: 'solid',
-				color: 'rgba(50,100,150, 0.2)',
-			},
-			textColor: 'rgba(255,255,255)',
-		},
   });
 const data = ref(generateSampleData(false));
 // Setting series options manually
@@ -120,56 +111,6 @@ chartStore.$subscribe((mutation, state) => {
   chartType.value = state.currentType
   changeData()
 })
-
-function randomShade() {
-  return Math.round(Math.random() * 255);
-}
-
-const randomColor = (alpha = 1) => {
-  return `rgba(${randomShade()}, ${randomShade()}, ${randomShade()}, ${alpha})`;
-};
-
-const colorsTypeMap = {
-  area: [
-    ['topColor', 0.4],
-    ['bottomColor', 0],
-    ['lineColor', 1],
-  ],
-  bar: [
-    ['upColor', 1],
-    ['downColor', 1],
-  ],
-  baseline: [
-    ['topFillColor1', 0.28],
-    ['topFillColor2', 0.05],
-    ['topLineColor', 1],
-    ['bottomFillColor1', 0.28],
-    ['bottomFillColor2', 0.05],
-    ['bottomLineColor', 1],
-  ],
-  candlestick: [
-    ['upColor', 1],
-    ['downColor', 1],
-    ['borderUpColor', 1],
-    ['borderDownColor', 1],
-    ['wickUpColor', 1],
-    ['wickDownColor', 1],
-  ],
-  histogram: [['color', 1]],
-  line: [['color', 1]],
-};
-
-// Set a random colour for the series as an example of how
-// to apply new options to series. A similar appraoch will work on the
-// option properties.
-const changeColors = () => {
-  const options = {};
-  const colorsToSet = colorsTypeMap[chartType.value];
-  colorsToSet.forEach(c => {
-    options[c[0]] = randomColor(c[1]);
-  });
-  seriesOptions.value = options;
-};
 
 const changeData = () => {
   const candlestickTypeData = ['candlestick', 'bar'].includes(chartType.value);
