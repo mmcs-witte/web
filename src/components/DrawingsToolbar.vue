@@ -6,7 +6,6 @@ import { DrawingType } from '../types/drawings';
 const drawingStore = useDrawingsStore()
 const selectDrawing = (drawingType: DrawingType) => {
   drawingStore.currentDrawing = drawingType;
-  //drawingStore.resetCurrentDrawing();
 }
 </script>
 

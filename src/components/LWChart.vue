@@ -154,6 +154,8 @@ drawingStore.$subscribe((mutation, store) => {
   selectedDrawingToolType.value = store.currentDrawing;
   selectedDrawingTool.value = getDrawingTool(selectedDrawingToolType.value);
   selectedDrawingTool.value.startDrawing();
+
+  store.currentDrawing = DrawingType.None;
 })
 
 indicatorsStore.$subscribe((mutation, store) => {
