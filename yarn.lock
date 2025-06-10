@@ -1002,10 +1002,10 @@ imurmurhash@^0.1.4:
   resolved "https://registry.npmjs.org/imurmurhash/-/imurmurhash-0.1.4.tgz"
   integrity sha512-JmXMZ6wuvDmLiHEml9ykzqO6lwFbof0GG4IkcGaENdCRDDmMVnny7s5HsIgHCbaq0w2MyPhDqkhTUgS2LU2PHA==
 
-interactive-lw-charts-tools@^1.0.0:
-  version "1.0.1"
-  resolved "https://registry.npmjs.org/interactive-lw-charts-tools/-/interactive-lw-charts-tools-1.0.1.tgz"
-  integrity sha512-6QlkxckdqVvhgwFAow+TqrVUHGuEeXhvGJEEHSOV5avDK3obRbhwMfYxEHT/5VAvRTgjNfU5Epdiz+rJ8ioDaQ==
+interactive-lw-charts-tools@^1.0.2:
+  version "1.0.2"
+  resolved "https://registry.npmjs.org/interactive-lw-charts-tools/-/interactive-lw-charts-tools-1.0.2.tgz"
+  integrity sha512-zW6wwmmBxcjq0UlX0EbhgkiuxfZ/DY9Uq8TYKDj7FU+JlfNRqxYEbJQcQQGr6E6Hvqw47tNkOTzfcmGV1LP+sA==
   dependencies:
     "@flatten-js/core" "^1.6.2"
     flatten-js "^0.6.9"
